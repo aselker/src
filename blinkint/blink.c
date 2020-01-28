@@ -32,6 +32,9 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
 }
 
 int16_t main(void) {
+
+    int has_seen_coin = 0;
+
     init_elecanisms();
 
     T1CON = 0x0030;         // set Timer1 period to 0.5s
@@ -42,11 +45,15 @@ int16_t main(void) {
     IEC0bits.T1IE = 1;      // enable Timer1 interrupt
     T1CONbits.TON = 1;      // turn on Timer1
 
+    while (D2 == 0) {}
+
     LED2 = ON;
 
     while (1) {
-        LED1 = (SW2 == 0) ? ON : OFF;   // turn LED1 on if SW2 is pressed 
-        LED3 = (SW3 == 0) ? ON : OFF;   // turn LED3 on if SW3 is pressed
+        if(D2 == 0) {
+            LED2 != LED2;
+        }
+
     }
 }
 
