@@ -38,12 +38,12 @@ int16_t main(void) {
     LED2 = ON;
 
     while (1) {
-        if (IFS0bits.T1IF == 1) {
+        if (IFS0bits.T1IF == 1 && D2 == 0) {
             IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
             LED2 = !LED2;           // toggle LED2
         }
-        LED1 = (SW2 == 0) ? ON : OFF;   // turn LED1 on if SW2 is pressed 
-        LED3 = (SW3 == 0) ? ON : OFF;   // turn LED3 on if SW3 is pressed
+        /*LED1 = (SW2 == 0) ? ON : OFF;   // turn LED1 on if SW2 is pressed */
+        /*LED3 = (SW3 == 0) ? ON : OFF;   // turn LED3 on if SW3 is pressed*/
     }
 }
 
