@@ -25,8 +25,10 @@
 */
 #include "elecanisms.h"
 
-#define PWM_MIN_WIDTH     900e-6
-#define PWM_MAX_WIDTH     2.1e-3
+/*#define PWM_MIN_WIDTH     900e-6*/
+/*#define PWM_MAX_WIDTH     2.1e-3*/
+#define PWM_MIN_WIDTH     0
+#define PWM_MAX_WIDTH     1.25e-3
 
 // D5 is pwm
 // D6 is dir
@@ -48,9 +50,22 @@ int16_t main(void) {
     D6_DIR = OUT;
     D6 = 1; 
 
+    // Enable the driver
+    D7_DIR = OUT;
+    D7 = 0;
+
     // Set PWM pin (it'll get overwritten by PWM hardware)
     D5_DIR = OUT;
     D5 = 0;
+
+
+    D8_DIR = OUT;
+    D8 = 1;
+    D9_DIR = OUT;
+    D9 = 1;
+    D10_DIR = OUT;
+    D10 = 0;
+
 
     uint8_t *RPOR = (uint8_t *)&RPOR0;   // What is this?
     uint8_t *RPINR = (uint8_t *)&RPINR0; // Srsly, what is this?
@@ -72,7 +87,7 @@ int16_t main(void) {
     OC1R = 1; // No clue
     OC1TMR = 0;
 
-    T1CON = 0x0010;     // configure Timer1 to have a period of 20ms
+    T1CON = 0x0001;     // configure Timer1's period (0x10 -> 20ms)
     PR1 = 0x9C3F;
 
     TMR1 = 0;
