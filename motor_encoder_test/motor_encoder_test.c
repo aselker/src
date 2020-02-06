@@ -67,12 +67,16 @@ int16_t main(void) {
     D10 = 0;
 
 
-    uint8_t *RPOR = (uint8_t *)&RPOR0;   // What is this?
-    uint8_t *RPINR = (uint8_t *)&RPINR0; // Srsly, what is this?
 
     __builtin_write_OSCCONL(OSCCON & 0xBF);
-    RPOR[D5_RP] = OC1_RP;  // connect the OC1 module output to pin D5
+    RPOR0[D5_RP] = OC1_RP;  // connect the OC1 module output to pin D5
     __builtin_write_OSCCONL(OSCCON | 0x40);
+
+    /*
+     * We use Center-Aligned PWM Mode, which is a lot like Continuous Pulse
+     * Mode.  The timer runs freely, and the output goes high when it hits
+     * OC1R, and then low when it hits OC1RS.
+     */
 
     OC1CON1 = 0x1C0F;   // configure OC1 module to use the peripheral
                         //   clock (i.e., FCY, OCTSEL<2:0> = 0b111),
@@ -81,14 +85,19 @@ int16_t main(void) {
     OC1CON2 = 0x008B;   // configure OC1 module to trigger from Timer1
                         //   (OCTRIG = 1 and SYNCSEL<4:0> = 0b01011)
 
-    // set OC1 pulse width to 1.5ms (i.e. halfway between 0.9ms and 2.1ms)
+                        // set OC1 pulse width to 1.5ms (i.e. halfway between 0.9ms and 2.1ms)
     pwm_temp.ul = 0x8000 * (uint32_t)pwm_multiplier;
-    OC1RS = pwm_offset + pwm_temp.w[1];
-    OC1R = 1; // No clue
-    OC1TMR = 0;
 
-    T1CON = 0x0001;     // configure Timer1's period (0x10 -> 20ms)
-    PR1 = 0x9C3F;
+    OC1R = 0;           // Time when the voltage goes high
+                        // Was originally 1 -- why not 0?  They seem to act the same
+
+    OC1RS = pwm_offset + pwm_temp.w[1]; // Time when the voltage goes low
+
+    OC1TMR = 0;         // Set the time base to... internal?
+
+    T1CON = 0x0010;     // Time base control - 0x10 -> 1/8 prescale
+                        
+    PR1 = 0x9C3F;       // Sets the period of 39999 (unit?)
 
     TMR1 = 0;
     T1CONbits.TON = 1;
