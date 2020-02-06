@@ -111,10 +111,10 @@ int16_t main(void) {
     servo_offset = (uint16_t)(FCY * SERVO_MIN_WIDTH);
     servo_multiplier = (uint16_t)(FCY * (SERVO_MAX_WIDTH - SERVO_MIN_WIDTH));
 
-    // Configure pin D13 and D12 to produce hobby servo control signals
+    // Configure pin D5 and D12 to produce hobby servo control signals
     // using the OC1 and OC2 modules, respectively.
-    D13_DIR = OUT;      // configure D13 to be a digital output
-    D13 = 0;            // set D13 low
+    D5_DIR = OUT;      // configure D5 to be a digital output
+    D5 = 0;            // set D5 low
 
     D12_DIR = OUT;      // configure D12 to be a digital output
     D12 = 0;            // set D12 low
@@ -123,7 +123,7 @@ int16_t main(void) {
     RPINR = (uint8_t *)&RPINR0;
 
     __builtin_write_OSCCONL(OSCCON & 0xBF);
-    RPOR[D13_RP] = OC1_RP;  // connect the OC1 module output to pin D13
+    RPOR[D5_RP] = OC1_RP;  // connect the OC1 module output to pin D5
     RPOR[D12_RP] = OC2_RP;  // connect the OC2 module output to pin D12
     __builtin_write_OSCCONL(OSCCON | 0x40);
 

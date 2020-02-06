@@ -78,29 +78,17 @@ int16_t main(void) {
      * OC1R, and then low when it hits OC1RS.
      */
 
-    OC1CON1 = 0x1C0F;   // configure OC1 module to use the peripheral
-                        //   clock (i.e., FCY, OCTSEL<2:0> = 0b111),
-                        //   TRIGSTAT = 1, and to operate in center-aligned 
-                        //   PWM mode (OCM<2:0> = 0b111)
-    OC1CON2 = 0x008B;   // configure OC1 module to trigger from Timer1
-                        //   (OCTRIG = 1 and SYNCSEL<4:0> = 0b01011)
-
-                        // set OC1 pulse width to 1.5ms (i.e. halfway between 0.9ms and 2.1ms)
-    pwm_temp.ul = 0x8000 * (uint32_t)pwm_multiplier;
-
-    OC1R = 0;           // Time when the voltage goes high
-                        // Was originally 1 -- why not 0?  They seem to act the same
-
-    OC1RS = pwm_offset + pwm_temp.w[1]; // Time when the voltage goes low
-
-    OC1TMR = 0;         // Set the time base to... internal?
-
-    T1CON = 0x0010;     // Time base control - 0x10 -> 1/8 prescale
-                        
-    PR1 = 0x9C3F;       // Sets the period of 39999 (unit?)
-
-    TMR1 = 0;
-    T1CONbits.TON = 1;
+    OC1CON1 = 0x1C06;   // configure OC1 module to use the peripheral 
+                        //   clock (i.e., FCY, OCTSEL<2:0> = 0b111) and 
+                        //   and to operate in edge-aligned PWM mode
+                        //   (OCM<2:0> = 0b110)
+    OC1CON2 = 0x001F;   // configure OC1 module to syncrhonize to itself
+                        //   (i.e., OCTRIG = 0 and SYNCSEL<4:0> = 0b11111)
+    
+    OC1RS = (uint16_t)(FCY / 1e3 - 1.);     // configure period register to 
+                                            //   get a frequency of 1kHz
+    OC1R = OC1RS >> 2;  // configure duty cycle to 25% (i.e., period / 4)
+    OC1TMR = 0;         // set OC1 timer count to 0
 
     while(1) { }
 
