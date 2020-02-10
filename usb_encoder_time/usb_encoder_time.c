@@ -116,10 +116,10 @@ void vendor_requests(void) {
 
             temp1 = (WORD)TMR3; // Read the timer's registers -- as quickly as
             temp2 = (WORD)TMR2; // possible so the time doesn't change
-            BD[EP0IN].address[2] = temp1.b[0];
-            BD[EP0IN].address[3] = temp1.b[1];
-            BD[EP0IN].address[4] = temp2.b[0];
-            BD[EP0IN].address[5] = temp2.b[1];
+            BD[EP0IN].address[2] = temp1.b[1];
+            BD[EP0IN].address[3] = temp1.b[0];
+            BD[EP0IN].address[4] = temp2.b[1];
+            BD[EP0IN].address[5] = temp2.b[0];
 
             BD[EP0IN].bytecount = 6;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
@@ -155,19 +155,19 @@ int16_t main(void) {
     // Now, configure the timers
     T2CON = 0x8038;
     //      0b1000 0000 0011 1000
-    //        | |        ||| | ^ Use internal timer (Fosc/2)
-    //        | |        ||| ^ Use as half of a 32-bit timer
-    //        | |        |^^ 1/256 prescale
-    //        | |        ^ Gated time accumulation disabled
-    //    Run ^ ^ Continue timer in idle mode
+    //    Run ^ |        ||| | ^ Use internal timer (Fosc/2)
+    //          |        ||| ^ Use as half of a 32-bit timer
+    //          |        |^^ 1/256 prescale
+    //          |        ^ Gated time accumulation disabled
+    //          ^ Continue timer in idle mode
 
     T3CON = 0x8008;
     //      0b1000 0000 0000 1000
-    //        | |        ||| | ^ Use internal timer (Fosc/2)
-    //        | |        ||| ^ Use as half of a 32-bit timer
-    //        | |        |^^ 1/1 prescale -- I think this is correct!
-    //        | |        ^ Gated time accumulation disabled
-    //    Run ^ ^ Continue timer in idle mode
+    //    Run ^ |        ||| | ^ Use internal timer (Fosc/2)
+    //          |        ||| ^ Use as half of a 32-bit timer
+    //          |        |^^ 1/1 prescale -- I think this is correct!
+    //          |        ^ Gated time accumulation disabled
+    //          ^ Continue timer in idle mode
 
 
 
