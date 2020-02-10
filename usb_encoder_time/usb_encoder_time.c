@@ -113,9 +113,16 @@ void vendor_requests(void) {
             temp = enc_readReg(USB_setup.wValue);
             BD[EP0IN].address[0] = temp.b[0];
             BD[EP0IN].address[1] = temp.b[1];
-            BD[EP0IN].address[2] = temp.b[0]; // TODO: Don't just send the position again
+
+            temp = (WORD)TMR3;
+            BD[EP0IN].address[2] = temp.b[0];
             BD[EP0IN].address[3] = temp.b[1];
-            BD[EP0IN].bytecount = 4;
+
+            temp = (WORD)TMR2;
+            BD[EP0IN].address[4] = temp.b[0];
+            BD[EP0IN].address[5] = temp.b[1];
+
+            BD[EP0IN].bytecount = 6;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
         default:
@@ -147,7 +154,7 @@ int16_t main(void) {
 
 
     // Now, configure the timers
-    T2CON = 0x8038
+    T2CON = 0x8038;
     //      0b1000 0000 0011 1000
     //        | |        ||| | ^ Use internal timer (Fosc/2)
     //        | |        ||| ^ Use as half of a 32-bit timer
@@ -155,11 +162,11 @@ int16_t main(void) {
     //        | |        ^ Gated time accumulation disabled
     //    Run ^ ^ Continue timer in idle mode
 
-    T3CON = 0x8038
-    //      0b1000 0000 0011 1000
+    T3CON = 0x8008;
+    //      0b1000 0000 0000 1000
     //        | |        ||| | ^ Use internal timer (Fosc/2)
     //        | |        ||| ^ Use as half of a 32-bit timer
-    //        | |        |^^ 1/256 prescale.  TODO: Should this be different because it's 32-bit?
+    //        | |        |^^ 1/1 prescale -- I think this is correct!
     //        | |        ^ Gated time accumulation disabled
     //    Run ^ ^ Continue timer in idle mode
 
