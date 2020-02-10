@@ -41,8 +41,8 @@
 #define ENC_MOSI_RP         D0_RP
 #define ENC_SCK_RP          D2_RP
 
-#define TOGGLE_LED1         0
-#define TOGGLE_LED2         1
+#define MOTOR_ON         0
+#define MOTOR_OFF         1
 #define ENC_READ_REG        6
 
 uint16_t even_parity(uint16_t v) {
@@ -99,13 +99,15 @@ void vendor_requests(void) {
     uint16_t i;
 
     switch (USB_setup.bRequest) {
-        case TOGGLE_LED1:
-            LED1 = !LED1;
+        case MOTOR_ON:
+            D5 = 1;
+            D7 = 0;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
-        case TOGGLE_LED2:
-            LED2 = !LED2;
+        case MOTOR_OFF:
+            D5 = 0;
+            D7 = 1;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
@@ -193,6 +195,21 @@ int16_t main(void) {
 
     USB_setup_vendor_callback = vendor_requests;
     init_usb();
+
+
+    // Set up the motor
+    // Set direction pin
+    D6_DIR = OUT;
+    D6 = 1; 
+
+    // Set enable pin (it'll get overwritten by USB commands)
+    D7_DIR = OUT;
+    D7 = 1; 
+
+    // Set PWM pin (it'll get overwritten by USB commands)
+    D5_DIR = OUT;
+    D5 = 0;
+
 
     while (USB_USWSTAT != CONFIG_STATE) {
 #ifndef USB_INTERRUPT
