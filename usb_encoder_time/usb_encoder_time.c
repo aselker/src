@@ -95,7 +95,7 @@ WORD enc_readReg(WORD address) {
 }
 
 void vendor_requests(void) {
-    WORD temp;
+    WORD temp1, temp2; // Used to disassemble 16-bit values into 8-bit values
     uint16_t i;
 
     switch (USB_setup.bRequest) {
@@ -110,17 +110,16 @@ void vendor_requests(void) {
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
         case ENC_READ_REG:
-            temp = enc_readReg(USB_setup.wValue);
-            BD[EP0IN].address[0] = temp.b[0];
-            BD[EP0IN].address[1] = temp.b[1];
+            temp1 = enc_readReg(USB_setup.wValue);
+            BD[EP0IN].address[0] = temp1.b[0];
+            BD[EP0IN].address[1] = temp1.b[1];
 
-            temp = (WORD)TMR3;
-            BD[EP0IN].address[2] = temp.b[0];
-            BD[EP0IN].address[3] = temp.b[1];
-
-            temp = (WORD)TMR2;
-            BD[EP0IN].address[4] = temp.b[0];
-            BD[EP0IN].address[5] = temp.b[1];
+            temp1 = (WORD)TMR3; // Read the timer's registers -- as quickly as
+            temp2 = (WORD)TMR2; // possible so the time doesn't change
+            BD[EP0IN].address[2] = temp1.b[0];
+            BD[EP0IN].address[3] = temp1.b[1];
+            BD[EP0IN].address[4] = temp2.b[0];
+            BD[EP0IN].address[5] = temp2.b[1];
 
             BD[EP0IN].bytecount = 6;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
