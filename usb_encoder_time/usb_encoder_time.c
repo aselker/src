@@ -131,23 +131,38 @@ int16_t main(void) {
 
     // Configure the timer so we know what time it is when we take a reading.
     //
-    // We may eventually use two 16-bit timers together as a 32-bit timer, but
-    // for now we're just using one and letting it overflow when it feels like
-    // it.  
+    // We use two 16-bit timers (Timer2 and Timer3) together as a 32-bit timer.
     //
     // I think the system clock runs at 16MHz, so with a 1/256 prescale, each
-    // tick will be 16 nanoseconds, and the 16-bit timer will overflow in about
-    // one millisecond.
-    //
-    // We'll use Timer1, which is a type A timer.
+    // tick will be 16 nanoseconds, and the 32-bit timer will overflow in about
+    // a minute.
     
-    T1CON = 0x8010;
-    //      0b1000 0000 0011 0000
-    //        | |        |||   ^ Use internal timer
+    // This bit is copied from a FRM...
+    T2CON = 0x00;          //Stops any 16/32-bit Timer2 operation
+    T3CON = 0x00;          //Stops any 16-bit Timer3 operation
+    TMR3 = 0x00;           //Clear contents of the timer3 register
+    TMR2 = 0x00;           //Clear contents of the timer2 register
+    PR3 = 0xFFFF;          //Load the Period register3 with the value 0xFFFF
+    PR2 = 0xFFFF;          //Load the Period register2 with the value 0xFFFF
+
+
+    // Now, configure the timers
+    T2CON = 0x8038
+    //      0b1000 0000 0011 1000
+    //        | |        ||| | ^ Use internal timer (Fosc/2)
+    //        | |        ||| ^ Use as half of a 32-bit timer
     //        | |        |^^ 1/256 prescale
     //        | |        ^ Gated time accumulation disabled
     //    Run ^ ^ Continue timer in idle mode
-    //         
+
+    T3CON = 0x8038
+    //      0b1000 0000 0011 1000
+    //        | |        ||| | ^ Use internal timer (Fosc/2)
+    //        | |        ||| ^ Use as half of a 32-bit timer
+    //        | |        |^^ 1/256 prescale.  TODO: Should this be different because it's 32-bit?
+    //        | |        ^ Gated time accumulation disabled
+    //    Run ^ ^ Continue timer in idle mode
+
 
 
 
