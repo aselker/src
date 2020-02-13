@@ -26,6 +26,8 @@
 #include <math.h>
 #include "elecanisms.h"
 
+// I don't know how many digits we'll need so let's use all of 'em
+#define TAU 6.283185307179586476925286766559005768394338798750211641949
 
 void start_32b_timer() {
 
@@ -125,7 +127,13 @@ int16_t main(void) {
     float duty_cycle;
 
     while(1) {
-        float duty_cycle = (1 + sin(TMR2 * 6.2832 / 65536)) / 2;
+        duty_cycle = sin(TMR2 * TAU / 65536) / 4;
+        if(duty_cycle < 0) {
+            D6 = 1;
+            duty_cycle = -duty_cycle;
+        } else {
+            D6 = 0;
+        }
 
         OC1R = OC1RS * duty_cycle;
 
