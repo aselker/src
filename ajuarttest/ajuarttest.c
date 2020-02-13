@@ -143,6 +143,7 @@ int16_t main(void) {
     init_usb();
 
     while (USB_USWSTAT != CONFIG_STATE) {
+        printf("Hello world!\r\n");
 #ifndef USB_INTERRUPT
         usb_service();
 #endif
@@ -151,6 +152,7 @@ int16_t main(void) {
 #ifndef USB_INTERRUPT
         usb_service();
 #endif
+        printf("Hello world!\r\n");
     }
 }
 

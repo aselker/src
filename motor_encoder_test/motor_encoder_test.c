@@ -24,10 +24,26 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 #include <math.h>
+#include "ajuart.h"
 #include "elecanisms.h"
+#include <stdio.h>
 
 // I don't know how many digits we'll need so let's use all of 'em
 #define TAU 6.283185307179586476925286766559005768394338798750211641949
+
+#define ENC_MISO            D1
+#define ENC_MOSI            D0
+#define ENC_SCK             D2
+#define ENC_CSn             D3
+
+#define ENC_MISO_DIR        D1_DIR
+#define ENC_MOSI_DIR        D0_DIR
+#define ENC_SCK_DIR         D2_DIR
+#define ENC_CSn_DIR         D3_DIR
+
+#define ENC_MISO_RP         D1_RP
+#define ENC_MOSI_RP         D0_RP
+#define ENC_SCK_RP          D2_RP
 
 void start_pwm() {
     // Set up PWM on pin D5
@@ -96,8 +112,8 @@ void start_32b_timer() {
 
 }
 
-
 void setup_encoder() {
+    uint8_t *RPOR, *RPINR;
     // Configure encoder pins and connect them to SPI2
     ENC_CSn_DIR = OUT; ENC_CSn = 1;
     ENC_SCK_DIR = OUT; ENC_SCK = 0;
@@ -119,9 +135,62 @@ void setup_encoder() {
 }
 
 
+uint16_t even_parity(uint16_t v) {
+    v ^= v >> 8;
+    v ^= v >> 4;
+    v ^= v >> 2;
+    v ^= v >> 1;
+    return v & 1;
+}
+
+WORD read_encoder(WORD address) {
+
+    /*WORD address = 0x3FFF; // I think we can hard-code this*/
+
+    WORD cmd, result;
+    uint16_t temp;
+
+    cmd.w = 0x4000 | address.w;         // set 2nd MSB to 1 for a read
+    cmd.w |= even_parity(cmd.w) << 15;
+
+    ENC_CSn = 0;
+
+    SPI2BUF = (uint16_t)cmd.b[1];
+    while (SPI2STATbits.SPIRBF == 0) {}
+    temp = SPI2BUF;
+
+    SPI2BUF = (uint16_t)cmd.b[0];
+    while (SPI2STATbits.SPIRBF == 0) {}
+    temp = SPI2BUF;
+
+    ENC_CSn = 1;
+
+    __asm__("nop");     // p.12 of the AS5048 datasheet specifies a minimum
+    __asm__("nop");     //   high time of CSn between transmission of 350ns
+    __asm__("nop");     //   which is 5.6 Tcy, so do nothing for 6 Tcy.
+    __asm__("nop");
+    __asm__("nop");
+    __asm__("nop");
+
+    ENC_CSn = 0;
+
+    SPI2BUF = 0;
+    while (SPI2STATbits.SPIRBF == 0) {}
+    result.b[1] = (uint8_t)SPI2BUF;
+
+    SPI2BUF = 0;
+    while (SPI2STATbits.SPIRBF == 0) {}
+    result.b[0] = (uint8_t)SPI2BUF;
+
+    ENC_CSn = 1;
+
+    return result; // Remember to & 0x3FFF before using angle
+}
+
 int16_t main(void) {
 
     init_elecanisms();
+    init_ajuart();
 
     // Set direction pin
     D6_DIR = OUT;
@@ -151,9 +220,13 @@ int16_t main(void) {
 
 
     float duty_cycle;
+    uint16_t encoder_pos;
 
     while(1) {
-        duty_cycle = sin(TMR2 * TAU / 65536) / 4;
+        /*duty_cycle = sin(TMR2 * TAU / 65536) / 4;*/
+        encoder_pos = read_encoder((WORD)0x3FFF).w;
+        encoder_pos = encoder_pos & (uint16_t)0x3FFF;
+        duty_cycle = encoder_pos / 16384.0 / 4.0;
         if(duty_cycle < 0) {
             D6 = 1;
             duty_cycle = -duty_cycle;
@@ -162,5 +235,8 @@ int16_t main(void) {
         }
 
         OC1R = OC1RS * duty_cycle;
+
+        printf("%f, %d\r\n", duty_cycle, encoder_pos);
+        /*printf("Hello world\r\n");*/
     }
 }
