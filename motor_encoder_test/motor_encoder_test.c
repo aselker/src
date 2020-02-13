@@ -134,7 +134,6 @@ void setup_encoder() {
     SPI2STAT = 0x8000;
 }
 
-
 uint16_t even_parity(uint16_t v) {
     v ^= v >> 8;
     v ^= v >> 4;
@@ -187,6 +186,39 @@ WORD read_encoder(WORD address) {
     return result; // Remember to & 0x3FFF before using angle
 }
 
+
+// Global variables, because we have to persistently track the encoder's
+// position
+int32_t encoder_revolutions = 0; // How many revolutions have we done?
+uint16_t encoder_last_reading = 0;   // Last reading (0-16383)
+
+int32_t get_encoder_pos() {
+    uint16_t reading = read_encoder((WORD)0x3FFF).w & 0x3FFF;
+
+    if ((encoder_last_reading < 4096) && (12288 < reading)) {
+        encoder_revolutions -= 1;
+        printf("-1 rev, to %d\r\n", encoder_revolutions);
+        printf("Last reading: %d    This reading: %d\r\n", encoder_last_reading, reading);
+    }
+    
+    if ((reading < 4096) && (12288 < encoder_last_reading)) {
+        encoder_revolutions += 1;
+        printf("+1 rev, to %d\r\n", encoder_revolutions);
+        printf("Last reading: %d    This reading: %d\r\n", encoder_last_reading, reading);
+    }
+    
+    /*printf("Last reading: %d    This reading: %d\r\n", encoder_last_reading, reading);*/
+
+    encoder_last_reading = reading;
+    
+    /*return (((int32_t)encoder_revolutions << 14) + reading);*/
+    /*return (16384 * (int32_t)encoder_revolutions);*/
+    /*return (((int32_t)encoder_revolutions) << 13);*/
+    /*int32_t total = ((int32_t)16384 * encoder_revolutions) + reading;*/
+    /*return total;*/
+    return 0;
+}
+
 int16_t main(void) {
 
     init_elecanisms();
@@ -220,13 +252,13 @@ int16_t main(void) {
 
 
     float duty_cycle;
-    uint16_t encoder_pos;
+    int32_t encoder_pos;
 
     while(1) {
         /*duty_cycle = sin(TMR2 * TAU / 65536) / 4;*/
-        encoder_pos = read_encoder((WORD)0x3FFF).w;
-        encoder_pos = encoder_pos & (uint16_t)0x3FFF;
-        duty_cycle = encoder_pos / 16384.0 / 4.0;
+        /*encoder_pos = read_encoder((WORD)0x3FFF).w;*/
+        encoder_pos = get_encoder_pos();
+        duty_cycle = encoder_pos / 16384.0 / 6.0;
         if(duty_cycle < 0) {
             D6 = 1;
             duty_cycle = -duty_cycle;
@@ -236,7 +268,7 @@ int16_t main(void) {
 
         OC1R = OC1RS * duty_cycle;
 
-        printf("%f, %d\r\n", duty_cycle, encoder_pos);
+        /*printf("%f, %d, %d\r\n", duty_cycle, encoder_pos, encoder_revolutions);*/
         /*printf("Hello world\r\n");*/
     }
 }
