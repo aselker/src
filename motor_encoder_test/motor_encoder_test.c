@@ -29,9 +29,35 @@
 // I don't know how many digits we'll need so let's use all of 'em
 #define TAU 6.283185307179586476925286766559005768394338798750211641949
 
+void start_pwm() {
+    // Set up PWM on pin D5
+    // Duty cycle is configured by setting OC1R to some fraction of OC1RS
+
+    __builtin_write_OSCCONL(OSCCON & 0xBF);
+    ((uint8_t *)&RPOR0)[D5_RP] = OC1_RP;  // connect the OC1 module output to pin D5
+    __builtin_write_OSCCONL(OSCCON | 0x40);
+
+    /*
+     * We use Edge-Aligned PWM Mode, which is a lot like Continuous Pulse
+     * Mode.  The timer runs freely, and the output goes high when it hits
+     * OC1R, and then low when it hits OC1RS.
+     */
+
+    OC1CON1 = 0x1C06;   // configure OC1 module to use the peripheral 
+                        //   clock (i.e., FCY, OCTSEL<2:0> = 0b111) and 
+                        //   and to operate in edge-aligned PWM mode
+                        //   (OCM<2:0> = 0b110)
+    OC1CON2 = 0x001F;   // configure OC1 module to syncrhonize to itself
+                        //   (i.e., OCTRIG = 0 and SYNCSEL<4:0> = 0b11111)
+    
+    OC1RS = (uint16_t)(FCY / 30e3 - 1.);     // configure period register to 
+                                            //   get a frequency of 1kHz
+    /*OC1R = OC1RS >> 2;  // configure duty cycle to 1/4*/
+    OC1R = 0;           // Set duty cycle to 0
+    OC1TMR = 0;         // set OC1 timer count to 0
+}
+
 void start_32b_timer() {
-
-
     // Configure the timer so we know what time it is when we take a reading.
     //
     // We use two 16-bit timers (Timer2 and Timer3) together as a 32-bit timer.
@@ -70,12 +96,32 @@ void start_32b_timer() {
 
 }
 
-WORD32 pwm_temp; // I think this is for type-punning between word and unsigned long
+
+void setup_encoder() {
+    // Configure encoder pins and connect them to SPI2
+    ENC_CSn_DIR = OUT; ENC_CSn = 1;
+    ENC_SCK_DIR = OUT; ENC_SCK = 0;
+    ENC_MOSI_DIR = OUT; ENC_MOSI = 0;
+    ENC_MISO_DIR = IN;
+
+    RPOR = (uint8_t *)&RPOR0;
+    RPINR = (uint8_t *)&RPINR0;
+
+    __builtin_write_OSCCONL(OSCCON & 0xBF);
+    RPINR[MISO2_RP] = ENC_MISO_RP;
+    RPOR[ENC_MOSI_RP] = MOSI2_RP;
+    RPOR[ENC_SCK_RP] = SCK2OUT_RP;
+    __builtin_write_OSCCONL(OSCCON | 0x40);
+
+    SPI2CON1 = 0x003B;              // SPI2 mode = 1, SCK freq = 8 MHz
+    SPI2CON2 = 0;
+    SPI2STAT = 0x8000;
+}
+
 
 int16_t main(void) {
 
     init_elecanisms();
-
 
     // Set direction pin
     D6_DIR = OUT;
@@ -98,30 +144,10 @@ int16_t main(void) {
     D10_DIR = OUT;
     D10 = 0;
 
+    start_pwm();        // Start PWM on pin D5
+    start_32b_timer();  // Start the 32-bit timer
+    setup_encoder();    // Set up the rotary encoder
 
-    __builtin_write_OSCCONL(OSCCON & 0xBF);
-    ((uint8_t *)&RPOR0)[D5_RP] = OC1_RP;  // connect the OC1 module output to pin D5
-    __builtin_write_OSCCONL(OSCCON | 0x40);
-
-    /*
-     * We use Edge-Aligned PWM Mode, which is a lot like Continuous Pulse
-     * Mode.  The timer runs freely, and the output goes high when it hits
-     * OC1R, and then low when it hits OC1RS.
-     */
-
-    OC1CON1 = 0x1C06;   // configure OC1 module to use the peripheral 
-                        //   clock (i.e., FCY, OCTSEL<2:0> = 0b111) and 
-                        //   and to operate in edge-aligned PWM mode
-                        //   (OCM<2:0> = 0b110)
-    OC1CON2 = 0x001F;   // configure OC1 module to syncrhonize to itself
-                        //   (i.e., OCTRIG = 0 and SYNCSEL<4:0> = 0b11111)
-    
-    OC1RS = (uint16_t)(FCY / 30e3 - 1.);     // configure period register to 
-                                            //   get a frequency of 1kHz
-    OC1R = OC1RS >> 2;  // configure duty cycle to 1/4
-    OC1TMR = 0;         // set OC1 timer count to 0
-
-    start_32b_timer(); // Start the 32-bit timer
 
 
     float duty_cycle;
@@ -136,7 +162,5 @@ int16_t main(void) {
         }
 
         OC1R = OC1RS * duty_cycle;
-
     }
-
 }
