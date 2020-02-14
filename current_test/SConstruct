@@ -15,10 +15,8 @@ list = Builder(action = 'xc16-objdump -S -D $SOURCE > $TARGET',
                src_suffix = 'elf')
 env.Append(BUILDERS = {'List' : list})
 
-env.Program('ajuarttest', ['ajuarttest.c',
-                           'descriptors.c',
-                           '../lib/usb.c',
+env.Program('current_test', ['current_test.c',
                            '../lib/ajuart.c',
                            '../lib/elecanisms.c'])
-env.Hex('ajuarttest')
-env.List('ajuarttest')
+env.Hex('current_test')
+env.List('current_test')

@@ -3,24 +3,24 @@
 ** All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
-** modification, are permitted provided that the following conditions are met: 
-** 
-**     1. Redistributions of source code must retain the above copyright 
-**        notice, this list of conditions and the following disclaimer. 
-**     2. Redistributions in binary form must reproduce the above copyright 
-**        notice, this list of conditions and the following disclaimer in the 
-**        documentation and/or other materials provided with the distribution. 
+** modification, are permitted provided that the following conditions are met:
 **
-** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE 
-** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF 
-** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
-** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN 
-** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) 
-** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
+**     1. Redistributions of source code must retain the above copyright
+**        notice, this list of conditions and the following disclaimer.
+**     2. Redistributions in binary form must reproduce the above copyright
+**        notice, this list of conditions and the following disclaimer in the
+**        documentation and/or other materials provided with the distribution.
+**
+** THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+** AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+** IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+** ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+** LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+** CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+** SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+** INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+** CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+** ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 #include <math.h>
@@ -30,6 +30,10 @@
 
 // I don't know how many digits we'll need so let's use all of 'em
 #define TAU 6.283185307179586476925286766559005768394338798750211641949
+
+#define RES_VAL 0.075
+#define VREF 3.3
+float scaling = VREF/1024;
 
 #define ENC_MISO            D1
 #define ENC_MOSI            D0
@@ -59,14 +63,14 @@ void start_pwm() {
      * OC1R, and then low when it hits OC1RS.
      */
 
-    OC1CON1 = 0x1C06;   // configure OC1 module to use the peripheral 
-                        //   clock (i.e., FCY, OCTSEL<2:0> = 0b111) and 
+    OC1CON1 = 0x1C06;   // configure OC1 module to use the peripheral
+                        //   clock (i.e., FCY, OCTSEL<2:0> = 0b111) and
                         //   and to operate in edge-aligned PWM mode
                         //   (OCM<2:0> = 0b110)
     OC1CON2 = 0x001F;   // configure OC1 module to syncrhonize to itself
                         //   (i.e., OCTRIG = 0 and SYNCSEL<4:0> = 0b11111)
-    
-    OC1RS = (uint16_t)(FCY / 30e3 - 1.);     // configure period register to 
+
+    OC1RS = (uint16_t)(FCY / 30e3 - 1.);     // configure period register to
                                             //   get a frequency of 1kHz
     /*OC1R = OC1RS >> 2;  // configure duty cycle to 1/4*/
     OC1R = 0;           // Set duty cycle to 0
@@ -83,7 +87,7 @@ void start_32b_timer() {
     // a minute.
     //
     // Outputs are TMR3 (high) and TMR2 (low). 65536 per second, I think.
-    
+
     // This bit is copied from a FRM...
     T2CON = 0x00;          //Stops any 16/32-bit Timer2 operation
     T3CON = 0x00;          //Stops any 16-bit Timer3 operation
@@ -198,13 +202,13 @@ int32_t get_encoder_pos() {
     if ((encoder_last_reading < 4096) && (12288 < reading)) {
         encoder_revolutions -= 1;
     }
-    
+
     if ((reading < 4096) && (12288 < encoder_last_reading)) {
         encoder_revolutions += 1;
     }
 
     encoder_last_reading = reading;
-    
+
     /*return (((int32_t)encoder_revolutions << 14) + reading);*/
     /*return (16384 * (int32_t)encoder_revolutions);*/
     /*return (((int32_t)encoder_revolutions) << 13);*/
@@ -218,7 +222,7 @@ int16_t main(void) {
 
     // Set direction pin
     D6_DIR = OUT;
-    D6 = 1; 
+    D6 = 1;
 
     // Enable the driver
     D7_DIR = OUT;
@@ -261,6 +265,10 @@ int16_t main(void) {
 
         OC1R = OC1RS * duty_cycle;
 
-        printf("%f, %ld, %d\r\n", duty_cycle, encoder_pos, encoder_revolutions);
+        float measuredvoltage = (float)read_analog(A0_AN)*scaling;
+        float vdrop = (measuredvoltage - VREF/2)/10;
+        float current = vdrop/RES_VAL; //note this will be negative depending on direction
+
+        printf("%f\t%ld\t%d\t%f\r\n", duty_cycle, encoder_pos, encoder_revolutions, current);
     }
 }
