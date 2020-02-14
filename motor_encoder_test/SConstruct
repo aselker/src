@@ -16,6 +16,7 @@ list = Builder(action = 'xc16-objdump -S -D $SOURCE > $TARGET',
 env.Append(BUILDERS = {'List' : list})
 
 env.Program('motor_encoder_test', ['motor_encoder_test.c', 
+                           '../lib/ajuart.c', 
                       '../lib/elecanisms.c']) 
 env.Hex('motor_encoder_test')
 env.List('motor_encoder_test')
