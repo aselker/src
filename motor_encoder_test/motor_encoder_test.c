@@ -31,6 +31,10 @@
 // I don't know how many digits we'll need so let's use all of 'em
 #define TAU 6.283185307179586476925286766559005768394338798750211641949
 
+#define GAIN_P 1.0
+#define GAIN_I 1.0
+#define GAIN_D 1.0
+
 #define RES_VAL 0.075
 #define VREF 3.3
 float scaling = VREF/1024;
@@ -116,6 +120,10 @@ void start_32b_timer() {
 
 }
 
+uint32_t time_now() {
+    return TMR2 + ((uint32_t)TMR3 << 16);
+}
+
 void setup_encoder() {
     uint8_t *RPOR, *RPINR;
     // Configure encoder pins and connect them to SPI2
@@ -190,6 +198,26 @@ WORD read_encoder(WORD address) {
     return result; // Remember to & 0x3FFF before using angle
 }
 
+uint32_t last_time = 0;
+float last_current_error = 0;
+float integral = 0;
+
+float current_pid_tick(float target) {
+
+    uint32_t time = time_now();     // So it doesn't change thru the function
+    int32_t dt = time - last_time;  // If this is negative / rolls over, I guess just roll with it
+
+    float current_error = get_current() - target;
+
+    float derivative = (current_error - last_current_error) / dt;
+    integral += current_error;
+    
+    float sum = -(GAIN_P*current_error + GAIN_I*integral + GAIN_D*derivative);
+
+    last_current_error = current_error;
+    last_time = time;
+}
+
 
 // Global variables, because we have to persistently track the encoder's
 // position
@@ -209,9 +237,6 @@ int32_t get_encoder_pos() {
 
     encoder_last_reading = reading;
 
-    /*return (((int32_t)encoder_revolutions << 14) + reading);*/
-    /*return (16384 * (int32_t)encoder_revolutions);*/
-    /*return (((int32_t)encoder_revolutions) << 13);*/
     return ((int32_t)16384 * encoder_revolutions) + reading;
 }
 
@@ -269,6 +294,6 @@ int16_t main(void) {
         float vdrop = (measuredvoltage - VREF/2)/10;
         float current = vdrop/RES_VAL; //note this will be negative depending on direction
 
-        printf("%f\t%ld\t%d\t%f\r\n", duty_cycle, encoder_pos, encoder_revolutions, current);
+        printf("%f\t%ld\t%d\t%f\t%ld\r\n", duty_cycle, encoder_pos, encoder_revolutions, current, time_now());
     }
 }
