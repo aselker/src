@@ -215,6 +215,17 @@ int32_t get_encoder_pos() {
     return ((int32_t)16384 * encoder_revolutions) + reading;
 }
 
+float get_current(unsigned char motor){
+  char sensepin = A0_AN;
+  if(motor){
+    sensepin = A1_AN;
+  }
+  float measuredvoltage = (float)read_analog(sensepin)*scaling;
+  float vdrop = (measuredvoltage - VREF/2)/10;
+  float current = vdrop/RES_VAL; //note this will be negative depending on direction
+  return current;
+}
+
 int16_t main(void) {
 
     init_elecanisms();
@@ -264,10 +275,7 @@ int16_t main(void) {
         duty_cycle = duty_cycle / 4;
 
         OC1R = OC1RS * duty_cycle;
-
-        float measuredvoltage = (float)read_analog(A0_AN)*scaling;
-        float vdrop = (measuredvoltage - VREF/2)/10;
-        float current = vdrop/RES_VAL; //note this will be negative depending on direction
+        float current = get_current(0);
 
         printf("%f\t%ld\t%d\t%f\r\n", duty_cycle, encoder_pos, encoder_revolutions, current);
     }
