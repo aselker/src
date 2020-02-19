@@ -31,9 +31,16 @@
 // I don't know how many digits we'll need so let's use all of 'em
 #define TAU 6.283185307179586476925286766559005768394338798750211641949
 
-#define GAIN_P 1.0
-#define GAIN_I 1.0
-#define GAIN_D 1.0
+#define GAIN_P 0.3
+//#define GAIN_I 0.0
+#define GAIN_D 0.0
+#define GAIN_I 0.05
+//#define GAIN_D 1.0
+
+#define CURRENT_LIMIT 0.8
+#define DUTY_CYCLE_DEAD_SPOT 0.01
+#define DUTY_CYCLE_LIMIT 1.0
+
 
 #define RES_VAL 0.075
 #define VREF 3.3
@@ -52,6 +59,9 @@ float scaling = VREF/1024;
 #define ENC_MISO_RP         D1_RP
 #define ENC_MOSI_RP         D0_RP
 #define ENC_SCK_RP          D2_RP
+
+#define LED_OVERCURRENT     LED1
+#define LED_OVER_DUTY_CYCLE LED2
 
 void start_pwm() {
     // Set up PWM on pin D5
@@ -198,19 +208,53 @@ WORD read_encoder(WORD address) {
     return result; // Remember to & 0x3FFF before using angle
 }
 
+float get_current(unsigned char motor){
+    char sensepin = A0_AN;
+    if(motor){
+        sensepin = A1_AN;
+    }
+    float measuredvoltage = (float)read_analog(sensepin)*scaling;
+    float vdrop = (measuredvoltage - VREF/2)/10;
+    float current = vdrop/RES_VAL; //note this will be negative depending on direction
+    return current;
+}
+
+
 uint32_t last_time = 0;
 float last_current_error = 0;
 float integral = 0;
+unsigned char is_overcurrent = 0;
+unsigned char is_over_duty_cycle = 0;
+
+void current_pid_reset() {
+    last_time = time_now();
+    last_current_error = 0;
+    integral = 0;
+}
 
 float current_pid_tick(float target) {
+    
+
+    if (CURRENT_LIMIT < target) {
+        target = CURRENT_LIMIT;
+        is_overcurrent = 1;
+        LED_OVERCURRENT = 1;
+    } else if (target < -CURRENT_LIMIT) {
+        target = -CURRENT_LIMIT;
+        is_overcurrent = 1;
+        LED_OVERCURRENT = 1;
+    } else {
+        is_overcurrent = 0;
+        LED_OVERCURRENT = 0;
+    }
 
     uint32_t time = time_now();     // So it doesn't change thru the function
     int32_t dt = time - last_time;  // If this is negative / rolls over, I guess just roll with it
 
-    float current_error = get_current() - target;
+    float current_error = get_current(0) - target;
 
     float derivative = (current_error - last_current_error) / dt;
-    integral += current_error;
+    if (!is_overcurrent && !is_over_duty_cycle) integral += current_error;
     
     float sum = -(GAIN_P*current_error + GAIN_I*integral + GAIN_D*derivative);
 
@@ -240,16 +284,34 @@ int32_t get_encoder_pos() {
     return ((int32_t)16384 * encoder_revolutions) + reading;
 }
 
-float get_current(unsigned char motor){
-  char sensepin = A0_AN;
-  if(motor){
-    sensepin = A1_AN;
-  }
-  float measuredvoltage = (float)read_analog(sensepin)*scaling;
-  float vdrop = (measuredvoltage - VREF/2)/10;
-  float current = vdrop/RES_VAL; //note this will be negative depending on direction
-  return current;
+void set_duty_cycle(unsigned char motor, float duty_cycle) {
+    // Takes a float, sets the motor to spin that way with that duty cycle
+    // Clips to +- DUTY_CYCLE_LIMIT
+
+    if(duty_cycle < 0) {
+        if (motor) D9 = 1;
+        else D6 = 1;
+        duty_cycle = -duty_cycle;
+    } else {
+        if (motor) D9 = 0;
+        else D6 = 0;
+    }
+
+    duty_cycle += DUTY_CYCLE_DEAD_SPOT; // Dead-spot compensation for friction
+
+    if (DUTY_CYCLE_LIMIT < duty_cycle) {
+        duty_cycle = DUTY_CYCLE_LIMIT;
+        is_over_duty_cycle = 1;
+        LED_OVER_DUTY_CYCLE = 1;
+    } else {
+        is_over_duty_cycle = 0;
+        LED_OVER_DUTY_CYCLE = 0;
+    }
+
+    OC1R = OC1RS * duty_cycle;
 }
+ 
+
 
 int16_t main(void) {
 
@@ -280,7 +342,7 @@ int16_t main(void) {
     start_pwm();        // Start PWM on pin D5
     start_32b_timer();  // Start the 32-bit timer
     setup_encoder();    // Set up the rotary encoder
-
+    current_pid_reset();
 
 
     float duty_cycle;
@@ -288,20 +350,15 @@ int16_t main(void) {
 
     while(1) {
         encoder_pos = get_encoder_pos();
-        duty_cycle = encoder_pos / 16384.0;
-        if(duty_cycle < 0) {
-            D6 = 1;
-            duty_cycle = -duty_cycle;
-        } else {
-            D6 = 0;
-        }
+        duty_cycle = current_pid_tick(encoder_pos / 16384.0 / 10);
 
-        if (1 < duty_cycle) duty_cycle = 1;
-        duty_cycle = duty_cycle / 4;
+        //duty_cycle = current_pid_tick(0.6);
 
-        OC1R = OC1RS * duty_cycle;
+        set_duty_cycle(0, duty_cycle);
+        
         float current = get_current(0);
 
-        printf("%f\t%ld\t%d\t%f\t%ld\r\n", duty_cycle, encoder_pos, encoder_revolutions, current, time_now());
+        //printf("%f\t%ld\t%d\t%f\t%ld\r\n", duty_cycle, encoder_pos, encoder_revolutions, current, time_now());
+        printf("%f\t%f\r\n", duty_cycle, current);
     }
 }
