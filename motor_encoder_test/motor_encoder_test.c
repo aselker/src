@@ -209,9 +209,9 @@ WORD read_encoder(WORD address) {
 }
 
 float get_current(unsigned char motor){
-    char sensepin = A0_AN;
+    char sensepin = A2_AN;
     if(motor){
-        sensepin = A1_AN;
+        sensepin = A3_AN;
     }
     float measuredvoltage = (float)read_analog(sensepin)*scaling;
     float vdrop = (measuredvoltage - VREF/2)/10;
@@ -256,7 +256,7 @@ float current_pid_tick(float target) {
     float derivative = (current_error - last_current_error) / dt;
     //if (!is_overcurrent && !is_over_duty_cycle) integral += current_error;
     if (!is_over_duty_cycle) integral += current_error;
-    
+
     float sum = -(GAIN_P*current_error + GAIN_I*integral + GAIN_D*derivative);
 
     last_current_error = current_error;
@@ -288,7 +288,7 @@ int32_t get_encoder_pos() {
 void set_duty_cycle(unsigned char motor, float duty_cycle) {
     // Takes a float, sets the motor to spin that way with that duty cycle
     // Clips to +- DUTY_CYCLE_LIMIT
-    
+
 
     if(duty_cycle < 0) {
         if (motor) D9 = 1;
@@ -300,7 +300,7 @@ void set_duty_cycle(unsigned char motor, float duty_cycle) {
     }
 
     //if (duty_cycle < DUTY_CYCLE_DEAD_SPOT) duty_cycle = 0;
-    
+
     if (DUTY_CYCLE_LIMIT < duty_cycle) {
         duty_cycle = DUTY_CYCLE_LIMIT;
         is_over_duty_cycle = 1;
@@ -314,7 +314,7 @@ void set_duty_cycle(unsigned char motor, float duty_cycle) {
     OC1R = OC1RS * (1 - duty_cycle);
 
 }
- 
+
 
 
 int16_t main(void) {
@@ -327,6 +327,8 @@ int16_t main(void) {
     D6 = 1;
     D9_DIR = OUT;
     D9 = 1;
+    D13_DIR = OUT;
+    D13 = 0;
 
     // Enable the drivers
     D7_DIR = OUT;
@@ -356,10 +358,11 @@ int16_t main(void) {
         //duty_cycle = current_pid_tick(0.6);
 
         set_duty_cycle(1, duty_cycle);
-        
+
         float current = get_current(1);
 
         //printf("%f\t%ld\t%d\t%f\t%ld\r\n", duty_cycle, encoder_pos, encoder_revolutions, current, time_now());
         printf("%f\t%d\t%f\r\n", duty_cycle, OC1R, current);
+        D13 = !D13;
     }
 }
