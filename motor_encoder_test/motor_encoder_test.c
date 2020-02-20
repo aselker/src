@@ -31,16 +31,16 @@
 // I don't know how many digits we'll need so let's use all of 'em
 #define TAU 6.283185307179586476925286766559005768394338798750211641949
 
-#define GAIN_P 0.3
+#define GAIN_P 30
 //#define GAIN_I 0.0
 //#define GAIN_D 0.0
 //#define GAIN_I 0.02
-#define GAIN_I 0.0002
-#define GAIN_D 10.0
+#define GAIN_I 0.02
+#define GAIN_D 1000
 
-#define CURRENT_LIMIT 0.8
-#define DUTY_CYCLE_DEAD_SPOT 0.05
-#define DUTY_CYCLE_LIMIT 0.95
+#define CURRENT_LIMIT 185 // About 0.8 amps
+#define DUTY_CYCLE_DEAD_SPOT 0.05 // Currently unused
+#define DUTY_CYCLE_LIMIT 30000 // Out of 32768
 
 
 #define RES_VAL 0.075
