@@ -33,9 +33,9 @@
 
 #define GAIN_P 0.3
 //#define GAIN_I 0.0
-#define GAIN_D 0.0
+//#define GAIN_D 0.0
 #define GAIN_I 0.02
-//#define GAIN_D 1.0
+#define GAIN_D 10.0
 
 #define CURRENT_LIMIT 0.8
 #define DUTY_CYCLE_DEAD_SPOT 0.05
@@ -253,11 +253,13 @@ float current_pid_tick(float target) {
 
     float current_error = get_current(1) - target;
 
+    float proportional = 0.5*(current_error + last_current_error);
     float derivative = (current_error - last_current_error) / dt;
     //if (!is_overcurrent && !is_over_duty_cycle) integral += current_error;
     if (!is_over_duty_cycle) integral += current_error;
+    //if (!is_over_duty_cycle) integral += current_error * dt;
 
-    float sum = -(GAIN_P*current_error + GAIN_I*integral + GAIN_D*derivative);
+    float sum = -(GAIN_P*proportional + GAIN_I*integral + GAIN_D*derivative);
 
     last_current_error = current_error;
     last_time = time;
