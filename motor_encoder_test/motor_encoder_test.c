@@ -222,8 +222,8 @@ float get_current(unsigned char motor){
 
 
 uint32_t last_time = 0;
-float last_current_error = 0;
-float integral = 0;
+int16_t last_current_error = 0;
+int32_t integral = 0;
 unsigned char is_overcurrent = 0;
 unsigned char is_over_duty_cycle = 0;
 
@@ -233,7 +233,7 @@ void current_pid_reset() {
     integral = 0;
 }
 
-float current_pid_tick(float target) {
+int16_t current_pid_tick(int16_t target) {
     if (CURRENT_LIMIT < target) {
         target = CURRENT_LIMIT;
         is_overcurrent = 1;
@@ -252,18 +252,19 @@ float current_pid_tick(float target) {
 
     if (dt < 0) printf("Time ran backwards!\r\n");
 
-    float current_error = get_current(1) - target;
+    int16_t current_error = get_current(1) - target;
 
-    float proportional = 0.5*(current_error + last_current_error);
-    float derivative = (current_error - last_current_error) / dt;
-    //if (!is_overcurrent && !is_over_duty_cycle) integral += current_error;
-    //if (!is_over_duty_cycle) integral += current_error;
+    int16_t proportional = (current_error + last_current_error)/2;
+    int16_t derivative = (current_error - last_current_error) / dt;
+    //if (!is_overcurrent && !is_over_duty_cycle) integral += current_error * dt;
     if (!is_over_duty_cycle) integral += current_error * dt;
 
-    float sum = -(GAIN_P*proportional + GAIN_I*integral + GAIN_D*derivative);
+    int16_t sum = -(GAIN_P*proportional + GAIN_I*integral + GAIN_D*derivative);
 
     last_current_error = current_error;
     last_time = time;
+
+    return sum;
 }
 
 
@@ -288,8 +289,9 @@ int32_t get_encoder_pos() {
     return ((int32_t)16384 * encoder_revolutions) + reading;
 }
 
-void set_duty_cycle(unsigned char motor, float duty_cycle) {
-    // Takes a float, sets the motor to spin that way with that duty cycle
+void set_duty_cycle(unsigned char motor, int16_t duty_cycle) {
+    // Takes a number from -32767 to 32767, sets duty cycle such that 32768 is
+    // full forward
     // Clips to +- DUTY_CYCLE_LIMIT
 
 
@@ -302,6 +304,7 @@ void set_duty_cycle(unsigned char motor, float duty_cycle) {
         else D6 = 0;
     }
 
+    // Add a dead spot
     //if (duty_cycle < DUTY_CYCLE_DEAD_SPOT) duty_cycle = 0;
 
     if (DUTY_CYCLE_LIMIT < duty_cycle) {
@@ -313,9 +316,7 @@ void set_duty_cycle(unsigned char motor, float duty_cycle) {
         LED_OVER_DUTY_CYCLE = 0;
     }
 
-    //OC1R = OC1RS * duty_cycle;
-    OC1R = OC1RS * (1 - duty_cycle);
-
+    OC1R = (uint16_t)((int32_t)OC1RS * ((int32_t)32768 - duty_cycle) > 15);
 }
 
 
@@ -351,7 +352,7 @@ int16_t main(void) {
     current_pid_reset();
 
 
-    float duty_cycle;
+    int16_t duty_cycle;
     int32_t encoder_pos;
 
     while(1) {
@@ -362,7 +363,7 @@ int16_t main(void) {
 
         set_duty_cycle(1, duty_cycle);
 
-        float current = get_current(1);
+        float current = get_current_amps(1);
 
         //printf("%f\t%ld\t%d\t%f\t%ld\r\n", duty_cycle, encoder_pos, encoder_revolutions, current, time_now());
         printf("%f\t%d\t%f\r\n", duty_cycle, OC1R, current);
