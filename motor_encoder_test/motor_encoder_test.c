@@ -31,7 +31,7 @@
 // I don't know how many digits we'll need so let's use all of 'em
 #define TAU 6.283185307179586476925286766559005768394338798750211641949
 
-#define GAIN_P 4 
+#define GAIN_P 4
 //#define GAIN_I 0
 #define GAIN_I 0.01
 #define GAIN_D 320
@@ -267,7 +267,7 @@ int32_t current_pid_tick(int32_t target) {
     int32_t current_error = get_current(1) - target;
     printf("Current error: %ld\t", current_error);
 
-    int32_t proportional = current_error + 
+    int32_t proportional = current_error +
         last_current_errors[0]/2 +
         last_current_errors[1]/4 +
         last_current_errors[2]/8 +
@@ -278,10 +278,10 @@ int32_t current_pid_tick(int32_t target) {
 
     int32_t sum = -(GAIN_P*proportional + GAIN_I*integral - GAIN_D*derivative);
 
-    last_current_errors[4] = last_current_errors[3]; 
-    last_current_errors[3] = last_current_errors[2]; 
-    last_current_errors[2] = last_current_errors[1]; 
-    last_current_errors[1] = last_current_errors[0]; 
+    last_current_errors[4] = last_current_errors[3];
+    last_current_errors[3] = last_current_errors[2];
+    last_current_errors[2] = last_current_errors[1];
+    last_current_errors[1] = last_current_errors[0];
     last_current_errors[0] = current_error;
     last_time = time;
 
@@ -341,11 +341,27 @@ void set_duty_cycle(unsigned char motor, int32_t duty_cycle) {
 }
 
 
+int32_t duty_cycle;
+int32_t encoder_pos;
+
+void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
+    IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
+
+    encoder_pos = get_encoder_pos();
+    duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
+    set_duty_cycle(1, duty_cycle);
+
+    D13 = !D13;
+
+}
+
 
 int16_t main(void) {
 
     init_elecanisms();
     init_ajuart();
+
+
 
     // Set direction pins
     D6_DIR = OUT;
@@ -373,24 +389,31 @@ int16_t main(void) {
     current_pid_reset();
 
 
-    int32_t duty_cycle;
-    int32_t encoder_pos;
+
     int32_t current;
     float current_amps;
 
+    T1CON = 0x0010;         // 0000 0000 0001 0000 set Timer1 period
+    PR1 = 0x7A11;
+
+    TMR1 = 0;               // set Timer1 count to 0
+    IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
+    IEC0bits.T1IE = 1;      // enable Timer1 interrupt
+    T1CONbits.TON = 1;      // turn on Timer1
+
     while(1) {
-        encoder_pos = get_encoder_pos();
-        duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
-
-        //duty_cycle = current_pid_tick(800);
-
-        set_duty_cycle(1, duty_cycle);
-
-        current = get_current(1);
-        current_amps = get_current_amps(1);
-
-        //printf("%f\t%ld\t%d\t%f\t%ld\r\n", duty_cycle, encoder_pos, encoder_revolutions, current, time_now());
-        printf("%ld\t%d\t%ld\t%f\r\n", duty_cycle, OC1R, current, current_amps);
-        D13 = !D13;
+        // encoder_pos = get_encoder_pos();
+        // duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
+        //
+        // //duty_cycle = current_pid_tick(800);
+        //
+        // set_duty_cycle(1, duty_cycle);
+        //
+        // current = get_current(1);
+        // current_amps = get_current_amps(1);
+        //
+        // //printf("%f\t%ld\t%d\t%f\t%ld\r\n", duty_cycle, encoder_pos, encoder_revolutions, current, time_now());
+        // printf("%ld\t%d\t%ld\t%f\r\n", duty_cycle, OC1R, current, current_amps);
+        // D13 = !D13;
     }
 }
