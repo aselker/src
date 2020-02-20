@@ -209,7 +209,18 @@ WORD read_encoder(WORD address) {
     return result; // Remember to & 0x3FFF before using angle
 }
 
-float get_current(unsigned char motor){
+int16_t get_current(unsigned char motor){
+    char sensepin = A2_AN;
+    if(motor){
+        sensepin = A3_AN;
+    }
+    return read_analog(sensepin)-512
+    //2.2 amps max measurement
+    //233 units/amp
+    //0.0043 amps/unit
+}
+
+float get_current_amps(unsigned char motor){
     char sensepin = A2_AN;
     if(motor){
         sensepin = A3_AN;
@@ -219,7 +230,6 @@ float get_current(unsigned char motor){
     float current = vdrop/RES_VAL; //note this will be negative depending on direction
     return current;
 }
-
 
 uint32_t last_time = 0;
 float last_current_error = 0;
