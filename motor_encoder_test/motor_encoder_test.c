@@ -31,9 +31,7 @@
 // I don't know how many digits we'll need so let's use all of 'em
 #define TAU 6.283185307179586476925286766559005768394338798750211641949
 
-#define GAIN_P 0
-#define GAIN_I 1
-#define GAIN_D 0
+
 
 #define CURRENT_LIMIT 3000
 #define DUTY_CYCLE_DEAD_SPOT 0.05 // Currently unused
@@ -60,6 +58,9 @@ float scaling = VREF/1024;
 
 #define LED_OVERCURRENT     LED1 // Red
 #define LED_OVER_DUTY_CYCLE LED2 // Green
+
+// Tuning constants are in units of 1/(2^8)
+int16_t gain_p, gain_i, gain_d;
 
 void start_pwm() {
     // Set up PWM on pin D5
@@ -228,17 +229,13 @@ float get_current_amps(unsigned char motor){
     return current;
 }
 
-int32_t last_current_errors[5] = {0, 0, 0, 0, 0};
+int32_t last_current_error = 0;
 int32_t integral = 0;
 unsigned char is_overcurrent = 0;
 unsigned char is_over_duty_cycle = 0;
 
 void current_pid_reset() {
-    last_current_errors[0] = 0;
-    last_current_errors[1] = 0;
-    last_current_errors[2] = 0;
-    last_current_errors[3] = 0;
-    last_current_errors[4] = 0;
+    last_current_error = 0;
     integral = 0;
 }
 
@@ -258,25 +255,15 @@ int32_t current_pid_tick(int32_t target) {
 
 
     int32_t current_error = get_current(1) - target;
-    printf("Current error: %ld\t", current_error);
 
-    int32_t proportional = current_error +
-        last_current_errors[0] +
-        last_current_errors[1] +
-        last_current_errors[2] +
-        last_current_errors[3];
-    int32_t derivative = (current_error - last_current_errors[0]);
-    //if (!is_overcurrent && !is_over_duty_cycle) integral += current_error * dt;
+    int32_t proportional = current_error; 
+    int32_t derivative = (current_error - last_current_error);
     // Don't update integral if we're over duty cycle and the signs are the same
     if (!is_over_duty_cycle || ((integral < 0) ^ (current_error < 0))) integral += current_error;
 
-    int32_t sum = -(GAIN_P*proportional + GAIN_I*integral - GAIN_D*derivative);
+    int32_t sum = -(gain_p*proportional/256 + gain_i*integral/256 - gain_d*derivative/256);
 
-    last_current_errors[4] = last_current_errors[3];
-    last_current_errors[3] = last_current_errors[2];
-    last_current_errors[2] = last_current_errors[1];
-    last_current_errors[1] = last_current_errors[0];
-    last_current_errors[0] = current_error;
+    last_current_error = current_error;
 
     return sum;
 }
@@ -381,6 +368,10 @@ int16_t main(void) {
     D8_DIR = OUT;
     D8 = 1;
 
+    gain_p = 0;
+    gain_i = 0.75 * 256;
+    gain_d = 0;
+
     start_pwm();        // Start PWM on pin D5
     start_32b_timer();  // Start the 32-bit timer
     setup_encoder();    // Set up the rotary encoder
@@ -391,9 +382,13 @@ int16_t main(void) {
     int32_t current;
     float current_amps;
 
+    // About 1,024 Hz
+    T1CON = 0x0000;         // 0000 0000 0001 0000 set Timer1 period
+    PR1 = 0x3D08;
+
     // About 256 Hz
-    T1CON = 0x0010;         // 0000 0000 0001 0000 set Timer1 period
-    PR1 = 0x1E84;
+    //T1CON = 0x0010;         // 0000 0000 0001 0000 set Timer1 period
+    //PR1 = 0x1E84;
 
     // About 32 Hz
     //T1CON = 0x0010;         // 0000 0000 0001 0000 set Timer1 period
