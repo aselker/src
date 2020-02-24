@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 #
 ## Copyright (c) 2018, Bradley A. Minch
 ## All rights reserved.
@@ -27,38 +29,62 @@
 import Tkinter as tk
 import usbservo
 
-class usbservogui:
 
+class usbservogui:
     def __init__(self):
         self.dev = usbservo.usbservo()
         if self.dev.dev >= 0:
             self.update_job = None
             self.root = tk.Tk()
-            self.root.title('PID Gain Setting GUI')
-            self.root.protocol('WM_DELETE_WINDOW', self.shut_down)
+            self.root.title("PID Gain Setting GUI")
+            self.root.protocol("WM_DELETE_WINDOW", self.shut_down)
             fm = tk.Frame(self.root)
             # tk.Button(fm, text = 'LED1', command = self.dev.toggle_led1).pack(side = tk.LEFT)
             # tk.Button(fm, text = 'LED2', command = self.dev.toggle_led2).pack(side = tk.LEFT)
             # tk.Button(fm, text = 'LED3', command = self.dev.toggle_led3).pack(side = tk.LEFT)
-            fm.pack(side = tk.TOP)
+            fm.pack(side=tk.TOP)
 
-            servo1_slider = tk.Scale(self.root, from_ = -32768, to = 32767, orient = tk.HORIZONTAL, showvalue = tk.TRUE, length=600, command = self.set_servo1_callback)
+            servo1_slider = tk.Scale(
+                self.root,
+                from_=-32768,
+                to=32767,
+                orient=tk.HORIZONTAL,
+                showvalue=tk.TRUE,
+                length=600,
+                command=self.set_servo1_callback,
+            )
             servo1_slider.set(0)
-            servo1_slider.pack(side = tk.TOP)
-            self.servo1_status = tk.Label(self.root, text = 'P Gain')
-            self.servo1_status.pack(side = tk.TOP)
+            servo1_slider.pack(side=tk.TOP)
+            self.servo1_status = tk.Label(self.root, text="P Gain")
+            self.servo1_status.pack(side=tk.TOP)
 
-            servo2_slider = tk.Scale(self.root, from_ = -32768, to = 32767, orient = tk.HORIZONTAL, showvalue = tk.TRUE, length=600, command = self.set_servo2_callback)
+            servo2_slider = tk.Scale(
+                self.root,
+                from_=-32768,
+                to=32767,
+                orient=tk.HORIZONTAL,
+                showvalue=tk.TRUE,
+                length=600,
+                command=self.set_servo2_callback,
+            )
             servo2_slider.set(0)
-            servo2_slider.pack(side = tk.TOP)
-            self.servo2_status = tk.Label(self.root, text = 'I Gain')
-            self.servo2_status.pack(side = tk.TOP)
+            servo2_slider.pack(side=tk.TOP)
+            self.servo2_status = tk.Label(self.root, text="I Gain")
+            self.servo2_status.pack(side=tk.TOP)
 
-            servo3_slider = tk.Scale(self.root, from_ = -32768, to = 32767, orient = tk.HORIZONTAL, showvalue = tk.TRUE, length=600, command = self.set_servo3_callback)
+            servo3_slider = tk.Scale(
+                self.root,
+                from_=-32768,
+                to=32767,
+                orient=tk.HORIZONTAL,
+                showvalue=tk.TRUE,
+                length=600,
+                command=self.set_servo3_callback,
+            )
             servo3_slider.set(0)
-            servo3_slider.pack(side = tk.TOP)
-            self.servo3_status = tk.Label(self.root, text = 'D Gain')
-            self.servo3_status.pack(side = tk.TOP)
+            servo3_slider.pack(side=tk.TOP)
+            self.servo3_status = tk.Label(self.root, text="D Gain")
+            self.servo3_status.pack(side=tk.TOP)
 
             # tk.Button(fm, text = 'RESET', command = self.dev.toggle_led1).pack(side = tk.LEFT)
             # fm.pack(side = tk.TOP)
@@ -94,6 +120,7 @@ class usbservogui:
         self.root.destroy()
         self.dev.close()
 
-if __name__=='__main__':
+
+if __name__ == "__main__":
     gui = usbservogui()
     gui.root.mainloop()
