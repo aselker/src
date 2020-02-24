@@ -26,6 +26,7 @@
 #include <math.h>
 #include "ajuart.h"
 #include "elecanisms.h"
+#include "usb.h"
 #include <stdio.h>
 
 // I don't know how many digits we'll need so let's use all of 'em
@@ -59,8 +60,35 @@ float scaling = VREF/1024;
 #define LED_OVERCURRENT     LED1 // Red
 #define LED_OVER_DUTY_CYCLE LED2 // Green
 
+#define CMD_ID_GAIN_P 7
+#define CMD_ID_GAIN_I 8
+#define CMD_ID_GAIN_D 9
+
 // Tuning constants are in units of 1/(2^8)
 int16_t gain_p, gain_i, gain_d;
+
+
+
+void vendor_requests(void) {
+    switch (USB_setup.bRequest) {
+        case CMD_ID_GAIN_P:
+            gain_p = (int16_t)USB_setup.wValue.w;
+            BD[EP0IN].bytecount = 0;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+        case CMD_ID_GAIN_I:
+            gain_i = (int16_t)USB_setup.wValue.w;
+            BD[EP0IN].bytecount = 0;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+        case CMD_ID_GAIN_D:
+            gain_d = (int16_t)USB_setup.wValue.w;
+            BD[EP0IN].bytecount = 0;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+    }
+
+}
 
 void start_pwm() {
     // Set up PWM on pin D5
@@ -377,6 +405,8 @@ int16_t main(void) {
     setup_encoder();    // Set up the rotary encoder
     current_pid_reset();
 
+    USB_setup_vendor_callback = vendor_requests;
+    init_usb();
 
 
     int32_t current;
@@ -400,6 +430,9 @@ int16_t main(void) {
     T1CONbits.TON = 1;      // turn on Timer1
 
     while(1) {
+#ifndef USB_INTERRUPT
+        usb_service();
+#endif
         // encoder_pos = get_encoder_pos();
         // duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
         //
