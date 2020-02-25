@@ -60,28 +60,67 @@ float scaling = VREF/1024;
 #define LED_OVERCURRENT     LED1 // Red
 #define LED_OVER_DUTY_CYCLE LED2 // Green
 
-#define CMD_ID_GAIN_P 7
-#define CMD_ID_GAIN_I 8
-#define CMD_ID_GAIN_D 9
+#define CMD_CYCLE_MODE 0
+#define CMD_GET_MODE 1
+#define CMD_CONST_SLIDER 5
+#define CMD_SPRING_SLIDER 6
+#define CMD_DAMPER_SLIDER 7
+#define CMD_WALL_SLIDER 8
+#define CMD_BUMPS_SLIDER 9
 
+#define MODE_CONST 0
+#define MODE_SPRING 1
+#define MODE_DAMPER 2
+#define MODE_WALL 3
+#define MODE_BUMPS 4
+
+uint16_t mode = 0;
+int16_t const_slider = 0, spring_slider = 0, damping_slider = 0, wall_slider = 0, bumps_slider = 0;
+
+// Constants for current PID TODO: init here
 int16_t gain_p, gain_i, gain_d;
-
 
 
 void vendor_requests(void) {
     switch (USB_setup.bRequest) {
-        case CMD_ID_GAIN_P:
-            gain_p = (int16_t)USB_setup.wValue.w;
+        case CMD_CYCLE_MODE:
+            mode = (mode + 1) % 5;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
-        case CMD_ID_GAIN_I:
-            gain_i = (int16_t)USB_setup.wValue.w;
+
+        case CMD_GET_MODE:
+            BD[EP0IN].address[0] = mode;
+            BD[EP0IN].bytecount = 1;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+
+        case CMD_CONST_SLIDER:
+            const_slider = (int16_t)USB_setup.wValue.w;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
-        case CMD_ID_GAIN_D:
-            gain_d = (int16_t)USB_setup.wValue.w;
+
+        case CMD_SPRING_SLIDER:
+            spring_slider = (int16_t)USB_setup.wValue.w;
+            BD[EP0IN].bytecount = 0;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+
+        case CMD_DAMPING_SLIDER:
+            damping_slider = (int16_t)USB_setup.wValue.w;
+            BD[EP0IN].bytecount = 0;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+
+        case CMD_WALL_SLIDER:
+            wall_slider = (int16_t)USB_setup.wValue.w;
+            BD[EP0IN].bytecount = 0;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+
+        case CMD_BUMPS_SLIDER:
+            bumps_slider = (int16_t)USB_setup.wValue.w;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
@@ -368,21 +407,26 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
     // PWM spring mode
     //duty_cycle = encoder_pos / 32;
 
-    // Constant mode
-    //duty_cycle = current_pid_tick(2000);
+    switch(mode) {
+        case MODE_CONST:
+            duty_cycle = current_pid_tick(50 * const_slider);
+            break;
+        case MODE_SPRING:
+            // Spring mode
+            duty_cycle = current_pid_tick(encoder_pos * spring_slider / 400);
+            set_duty_cycle(1, duty_cycle);
+            break;
+        case MODE_DAMPER:
+            // Damper mode
+            speed = encoder_pos - last_encoder_pos;
+            last_encoder_pos = encoder_pos;
+            duty_cycle = current_pid_tick(speed * abs(speed) * damping_slider / 10 );
+            set_duty_cycle(1, duty_cycle);
+            break;
+        case MODE_WALL:
+            // Wall mode
 
-    // Spring mode
-    //duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
-    //set_duty_cycle(1, duty_cycle);
-
-    // Damper mode
-    speed = encoder_pos - last_encoder_pos;
-    last_encoder_pos = encoder_pos;
-    duty_cycle = current_pid_tick(speed * abs(speed) / 4);
-    set_duty_cycle(1, duty_cycle);
-
-    // Wall mode
-
+    }
     D13 = 0;
 }
 
