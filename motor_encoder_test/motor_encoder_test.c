@@ -80,11 +80,18 @@ int16_t const_slider = 0, spring_slider = 0, damper_slider = 0, wall_slider = 0,
 // Constants for current PID TODO: init here
 int16_t gain_p, gain_i, gain_d;
 
+// Global variables, because we have to persistently track the encoder's
+// position
+int16_t encoder_revolutions = 0; // How many revolutions have we done?
+uint16_t encoder_last_reading = 0;   // Last reading (0-16383)
+
+
 
 void vendor_requests(void) {
     switch (USB_setup.bRequest) {
         case CMD_CYCLE_MODE:
             mode = (mode + 1) % 5;
+            encoder_revolutions = 0;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
@@ -335,11 +342,6 @@ int32_t current_pid_tick(int32_t target) {
 }
 
 
-// Global variables, because we have to persistently track the encoder's
-// position
-int16_t encoder_revolutions = 0; // How many revolutions have we done?
-uint16_t encoder_last_reading = 0;   // Last reading (0-16383)
-
 int32_t get_encoder_pos() {
     uint16_t reading = read_encoder((WORD)0x3FFF).w & 0x3FFF;
 
@@ -420,15 +422,17 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
             // Damper mode
             speed = encoder_pos - last_encoder_pos;
             last_encoder_pos = encoder_pos;
-            current_goal = speed * abs(speed) * damper_slider / 10;
+            current_goal = speed * abs(speed) * damper_slider / 24;
             break;
         case MODE_WALL:
-            if (encoder_pos < (wall_slider * 50)) {
-                current_goal = (encoder_pos - wall_slider*10) * spring_slider / 400;
+            if (encoder_pos < (wall_slider * 500)) {
+                current_goal = ((encoder_pos - wall_slider*500) / 4) + (speed * abs(speed) / 2);
+            } else {
+                current_goal = 0;
             }
             break;
         case MODE_BUMPS:
-            current_goal = abs((encoder_pos % bumps_slider * 10) - (bumps_slider * 5)) * spring_slider / 400;
+            current_goal = abs((encoder_pos % bumps_slider * 100) - (bumps_slider * 50)) * spring_slider / 200;
             break;
         default:
             current_goal = 0;
@@ -512,6 +516,6 @@ int16_t main(void) {
 #endif
 
         //printf("%ld\r\n", integral);
-        printf("%d\r\n", OC1R);
+        printf("%d\r\n", mode);
     }
 }
