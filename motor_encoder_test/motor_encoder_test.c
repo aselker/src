@@ -60,28 +60,74 @@ float scaling = VREF/1024;
 #define LED_OVERCURRENT     LED1 // Red
 #define LED_OVER_DUTY_CYCLE LED2 // Green
 
-#define CMD_ID_GAIN_P 7
-#define CMD_ID_GAIN_I 8
-#define CMD_ID_GAIN_D 9
+#define CMD_CYCLE_MODE 0
+#define CMD_GET_MODE 1
+#define CMD_CONST_SLIDER 5
+#define CMD_SPRING_SLIDER 6
+#define CMD_DAMPER_SLIDER 7
+#define CMD_WALL_SLIDER 8
+#define CMD_BUMPS_SLIDER 9
 
+#define MODE_CONST 0
+#define MODE_SPRING 1
+#define MODE_DAMPER 2
+#define MODE_WALL 3
+#define MODE_BUMPS 4
+
+uint16_t mode = MODE_CONST;
+int16_t const_slider = 0, spring_slider = 0, damper_slider = 0, wall_slider = 0, bumps_slider = 0;
+
+// Constants for current PID TODO: init here
 int16_t gain_p, gain_i, gain_d;
+
+// Global variables, because we have to persistently track the encoder's
+// position
+int16_t encoder_revolutions = 0; // How many revolutions have we done?
+uint16_t encoder_last_reading = 0;   // Last reading (0-16383)
 
 
 
 void vendor_requests(void) {
     switch (USB_setup.bRequest) {
-        case CMD_ID_GAIN_P:
-            gain_p = (int16_t)USB_setup.wValue.w;
+        case CMD_CYCLE_MODE:
+            mode = (mode + 1) % 5;
+            encoder_revolutions = 0;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
-        case CMD_ID_GAIN_I:
-            gain_i = (int16_t)USB_setup.wValue.w;
+
+        case CMD_GET_MODE:
+            BD[EP0IN].address[0] = mode;
+            BD[EP0IN].bytecount = 1;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+
+        case CMD_CONST_SLIDER:
+            const_slider = (int16_t)USB_setup.wValue.w;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
-        case CMD_ID_GAIN_D:
-            gain_d = (int16_t)USB_setup.wValue.w;
+
+        case CMD_SPRING_SLIDER:
+            spring_slider = (int16_t)USB_setup.wValue.w;
+            BD[EP0IN].bytecount = 0;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+
+        case CMD_DAMPER_SLIDER:
+            damper_slider = (int16_t)USB_setup.wValue.w;
+            BD[EP0IN].bytecount = 0;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+
+        case CMD_WALL_SLIDER:
+            wall_slider = (int16_t)USB_setup.wValue.w;
+            BD[EP0IN].bytecount = 0;
+            BD[EP0IN].status = UOWN | DTS | DTSEN;
+            break;
+
+        case CMD_BUMPS_SLIDER:
+            bumps_slider = (int16_t)USB_setup.wValue.w;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
@@ -296,11 +342,6 @@ int32_t current_pid_tick(int32_t target) {
 }
 
 
-// Global variables, because we have to persistently track the encoder's
-// position
-int16_t encoder_revolutions = 0; // How many revolutions have we done?
-uint16_t encoder_last_reading = 0;   // Last reading (0-16383)
-
 int32_t get_encoder_pos() {
     uint16_t reading = read_encoder((WORD)0x3FFF).w & 0x3FFF;
 
@@ -354,6 +395,9 @@ void set_duty_cycle(unsigned char motor, int32_t duty_cycle) {
 
 int32_t duty_cycle;
 int32_t encoder_pos;
+int32_t last_encoder_pos = 0;
+int32_t speed;
+int32_t current_goal;
 
 // Interrupt Service Routine (ISR)
 void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
@@ -366,13 +410,35 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
     // PWM spring mode
     //duty_cycle = encoder_pos / 32;
 
-    // Current constant mode
-    //duty_cycle = current_pid_tick(2000);
-
-    // Current spring mode
-    duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
-    set_duty_cycle(1, duty_cycle);
-
+    switch(mode) {
+        case MODE_CONST:
+            current_goal = 50 * const_slider;
+            break;
+        case MODE_SPRING:
+            // Spring mode
+            current_goal = encoder_pos * spring_slider / 400;
+            break;
+        case MODE_DAMPER:
+            // Damper mode
+            speed = encoder_pos - last_encoder_pos;
+            last_encoder_pos = encoder_pos;
+            current_goal = speed * abs(speed) * damper_slider / 24;
+            break;
+        case MODE_WALL:
+            if (encoder_pos < (wall_slider * 500)) {
+                current_goal = ((encoder_pos - wall_slider*500) / 4) + (speed * abs(speed) / 2);
+            } else {
+                current_goal = 0;
+            }
+            break;
+        case MODE_BUMPS:
+            current_goal = abs((encoder_pos % bumps_slider * 100) - (bumps_slider * 50)) * spring_slider / 200;
+            break;
+        default:
+            current_goal = 0;
+            break;
+    }
+    set_duty_cycle(1, current_pid_tick(current_goal));
     D13 = 0;
 }
 
@@ -450,6 +516,6 @@ int16_t main(void) {
 #endif
 
         //printf("%ld\r\n", integral);
-        printf("%d\r\n", OC1R);
+        printf("%d\r\n", mode);
     }
 }
