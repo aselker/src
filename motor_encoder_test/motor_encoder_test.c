@@ -74,8 +74,8 @@ float scaling = VREF/1024;
 #define MODE_WALL 3
 #define MODE_BUMPS 4
 
-uint16_t mode = 0;
-int16_t const_slider = 0, spring_slider = 0, damping_slider = 0, wall_slider = 0, bumps_slider = 0;
+uint16_t mode = MODE_CONST;
+int16_t const_slider = 0, spring_slider = 0, damper_slider = 0, wall_slider = 0, bumps_slider = 0;
 
 // Constants for current PID TODO: init here
 int16_t gain_p, gain_i, gain_d;
@@ -107,8 +107,8 @@ void vendor_requests(void) {
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
 
-        case CMD_DAMPING_SLIDER:
-            damping_slider = (int16_t)USB_setup.wValue.w;
+        case CMD_DAMPER_SLIDER:
+            damper_slider = (int16_t)USB_setup.wValue.w;
             BD[EP0IN].bytecount = 0;
             BD[EP0IN].status = UOWN | DTS | DTSEN;
             break;
@@ -395,6 +395,7 @@ int32_t duty_cycle;
 int32_t encoder_pos;
 int32_t last_encoder_pos = 0;
 int32_t speed;
+int32_t current_goal;
 
 // Interrupt Service Routine (ISR)
 void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
@@ -409,24 +410,31 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
 
     switch(mode) {
         case MODE_CONST:
-            duty_cycle = current_pid_tick(50 * const_slider);
+            current_goal = 50 * const_slider;
             break;
         case MODE_SPRING:
             // Spring mode
-            duty_cycle = current_pid_tick(encoder_pos * spring_slider / 400);
-            set_duty_cycle(1, duty_cycle);
+            current_goal = encoder_pos * spring_slider / 400;
             break;
         case MODE_DAMPER:
             // Damper mode
             speed = encoder_pos - last_encoder_pos;
             last_encoder_pos = encoder_pos;
-            duty_cycle = current_pid_tick(speed * abs(speed) * damping_slider / 10 );
-            set_duty_cycle(1, duty_cycle);
+            current_goal = speed * abs(speed) * damper_slider / 10;
             break;
         case MODE_WALL:
-            // Wall mode
-
+            if (encoder_pos < (wall_slider * 50)) {
+                current_goal = (encoder_pos - wall_slider*10) * spring_slider / 400;
+            }
+            break;
+        case MODE_BUMPS:
+            current_goal = abs((encoder_pos % bumps_slider * 10) - (bumps_slider * 5)) * spring_slider / 400;
+            break;
+        default:
+            current_goal = 0;
+            break;
     }
+    set_duty_cycle(1, current_pid_tick(current_goal));
     D13 = 0;
 }
 
