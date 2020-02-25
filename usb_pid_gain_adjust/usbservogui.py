@@ -60,8 +60,8 @@ class usbservogui:
 
             servo2_slider = tk.Scale(
                 self.root,
-                from_=-32768,
-                to=32767,
+                from_=-327,
+                to=327,
                 orient=tk.HORIZONTAL,
                 showvalue=tk.TRUE,
                 length=600,
@@ -116,7 +116,7 @@ class usbservogui:
     #     self.update_job = self.root.after(50, self.update_status)
 
     def shut_down(self):
-        self.root.after_cancel(self.update_job)
+        # self.root.after_cancel(self.update_job)
         self.root.destroy()
         self.dev.close()
 
