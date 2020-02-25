@@ -427,12 +427,22 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
         case MODE_WALL:
             speed = encoder_pos - last_encoder_pos;
             last_encoder_pos = encoder_pos;
-            if (encoder_pos < (wall_slider * 500)) {
-                current_goal = ((encoder_pos - wall_slider*500) / 4) + (speed * abs(speed) / 2);
-            } else {
-                current_goal = 0;
-            }
+
+            current_goal = ((encoder_pos - wall_slider*500) / 4) + (speed * abs(speed) / 2);
+
+            if(wall_slider > 0){
+                if (encoder_pos > (wall_slider * 500)) {
+                    current_goal = 0;
+                }
+            } else{
+                if (encoder_pos < (wall_slider * 500)) {
+                    current_goal = 0;
+                }
+              }
+
+
             break;
+
         case MODE_BUMPS:
             current_goal = abs((encoder_pos % bumps_slider * 100) - (bumps_slider * 50)) * spring_slider / 200;
 
