@@ -354,6 +354,8 @@ void set_duty_cycle(unsigned char motor, int32_t duty_cycle) {
 
 int32_t duty_cycle;
 int32_t encoder_pos;
+int32_t last_encoder_pos = 0;
+int32_t speed;
 
 // Interrupt Service Routine (ISR)
 void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
@@ -366,12 +368,20 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
     // PWM spring mode
     //duty_cycle = encoder_pos / 32;
 
-    // Current constant mode
+    // Constant mode
     //duty_cycle = current_pid_tick(2000);
 
-    // Current spring mode
-    duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
+    // Spring mode
+    //duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
+    //set_duty_cycle(1, duty_cycle);
+
+    // Damper mode
+    speed = encoder_pos - last_encoder_pos;
+    last_encoder_pos = encoder_pos;
+    duty_cycle = current_pid_tick(speed * 32);
     set_duty_cycle(1, duty_cycle);
+
+    // Wall mode
 
     D13 = 0;
 }
