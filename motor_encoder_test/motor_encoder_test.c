@@ -378,7 +378,7 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
     // Damper mode
     speed = encoder_pos - last_encoder_pos;
     last_encoder_pos = encoder_pos;
-    duty_cycle = current_pid_tick(speed * 32);
+    duty_cycle = current_pid_tick(speed * abs(speed) / 4);
     set_duty_cycle(1, duty_cycle);
 
     // Wall mode
