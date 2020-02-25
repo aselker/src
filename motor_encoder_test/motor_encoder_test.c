@@ -329,7 +329,7 @@ int32_t current_pid_tick(int32_t target) {
 
     int32_t current_error = get_current(1) - target;
 
-    int32_t proportional = current_error; 
+    int32_t proportional = current_error;
     int32_t derivative = (current_error - last_current_error);
     // Don't update integral if we're over duty cycle and the signs are the same
     if (!is_over_duty_cycle || ((integral < 0) ^ (current_error < 0))) integral += current_error;
@@ -425,6 +425,8 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
             current_goal = speed * abs(speed) * damper_slider / 24;
             break;
         case MODE_WALL:
+            speed = encoder_pos - last_encoder_pos;
+            last_encoder_pos = encoder_pos;
             if (encoder_pos < (wall_slider * 500)) {
                 current_goal = ((encoder_pos - wall_slider*500) / 4) + (speed * abs(speed) / 2);
             } else {
@@ -433,6 +435,7 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
             break;
         case MODE_BUMPS:
             current_goal = abs((encoder_pos % bumps_slider * 100) - (bumps_slider * 50)) * spring_slider / 200;
+
             break;
         default:
             current_goal = 0;
