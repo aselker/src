@@ -35,7 +35,7 @@
 
 
 #define CURRENT_LIMIT 3000
-#define DUTY_CYCLE_DEAD_SPOT 0.05 // Currently unused
+#define DUTY_CYCLE_DEAD_SPOT 130
 #define DUTY_CYCLE_LIMIT 32767 // Out of 32768
 
 
@@ -64,7 +64,6 @@ float scaling = VREF/1024;
 #define CMD_ID_GAIN_I 8
 #define CMD_ID_GAIN_D 9
 
-// Tuning constants are in units of 1/(2^8)
 int16_t gain_p, gain_i, gain_d;
 
 
@@ -95,7 +94,8 @@ void start_pwm() {
     // Duty cycle is configured by setting OC1R to some fraction of OC1RS
 
     __builtin_write_OSCCONL(OSCCON & 0xBF);
-    ((uint8_t *)&RPOR0)[D10_RP] = OC1_RP;  // connect the OC1 module output to pin D5
+    ((uint8_t *)&RPOR0)[D8_RP] = OC1_RP;  // connect the OC1 module output to driver 2's PWM pin
+    //((uint8_t *)&RPOR0)[D10_RP] = OC1_RP;  // connect the OC1 module output to driver 2's enable pin
     __builtin_write_OSCCONL(OSCCON | 0x40);
 
     /*
@@ -112,7 +112,6 @@ void start_pwm() {
                         //   (i.e., OCTRIG = 0 and SYNCSEL<4:0> = 0b11111)
 
     OC1RS = (uint16_t)(FCY / 30e3 - 1.);     // configure period register to
-                                            //   get a frequency of 1kHz
     /*OC1R = OC1RS >> 2;  // configure duty cycle to 1/4*/
     OC1R = 0;           // Set duty cycle to 0
     OC1TMR = 0;         // set OC1 timer count to 0
@@ -289,7 +288,7 @@ int32_t current_pid_tick(int32_t target) {
     // Don't update integral if we're over duty cycle and the signs are the same
     if (!is_over_duty_cycle || ((integral < 0) ^ (current_error < 0))) integral += current_error;
 
-    int32_t sum = -(gain_p*proportional/256 + gain_i*integral/256 - gain_d*derivative/256);
+    int32_t sum = -((int32_t)gain_p*proportional/1024 + (int32_t)gain_i*integral/1024 - (int32_t)gain_d*derivative/1024);
 
     last_current_error = current_error;
 
@@ -333,8 +332,8 @@ void set_duty_cycle(unsigned char motor, int32_t duty_cycle) {
         else D6 = 0;
     }
 
-    // Add a dead spot
-    //if (duty_cycle < DUTY_CYCLE_DEAD_SPOT) duty_cycle = 0;
+    // Dead-spot compensation
+    duty_cycle += DUTY_CYCLE_DEAD_SPOT;
 
     if (DUTY_CYCLE_LIMIT < duty_cycle) {
         duty_cycle = DUTY_CYCLE_LIMIT;
@@ -345,21 +344,33 @@ void set_duty_cycle(unsigned char motor, int32_t duty_cycle) {
         LED_OVER_DUTY_CYCLE = 0;
     }
 
-    OC1R = (uint16_t)(((uint32_t)OC1RS * (32768 - duty_cycle)) / 32768);
+    // For 'pwm' pin
+    OC1R = (uint16_t)(((uint32_t)OC1RS * duty_cycle) / 32768);
+
+    // For 'enable' pin
+    //OC1R = (uint16_t)(((uint32_t)OC1RS * (32768 - duty_cycle)) / 32768);
 }
 
 
 int32_t duty_cycle;
 int32_t encoder_pos;
 
+// Interrupt Service Routine (ISR)
 void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
     D13 = 1;
     D12 = !D12;
     IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
 
     encoder_pos = get_encoder_pos();
-    //duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
-    duty_cycle = current_pid_tick(2000);
+
+    // PWM spring mode
+    //duty_cycle = encoder_pos / 32;
+
+    // Current constant mode
+    //duty_cycle = current_pid_tick(2000);
+
+    // Current spring mode
+    duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
     set_duty_cycle(1, duty_cycle);
 
     D13 = 0;
@@ -392,7 +403,7 @@ int16_t main(void) {
 
     // Set PWM pins (it'll get overwritten by PWM hardware)
     D5_DIR = OUT;
-    D5 = 0;
+    D5 = 1;
     D8_DIR = OUT;
     D8 = 1;
 
@@ -412,9 +423,13 @@ int16_t main(void) {
     int32_t current;
     float current_amps;
 
-    // About 1,024 Hz
+    // About 3,072 Hz
     T1CON = 0x0000;         // 0000 0000 0001 0000 set Timer1 period
-    PR1 = 0x3D08;
+    PR1 = 0x1458;
+
+    // About 1,024 Hz
+    //T1CON = 0x0000;         // 0000 0000 0001 0000 set Timer1 period
+    //PR1 = 0x3D08;
 
     // About 256 Hz
     //T1CON = 0x0010;         // 0000 0000 0001 0000 set Timer1 period
@@ -433,18 +448,8 @@ int16_t main(void) {
 #ifndef USB_INTERRUPT
         usb_service();
 #endif
-        // encoder_pos = get_encoder_pos();
-        // duty_cycle = current_pid_tick(encoder_pos * 400 / 16384);
-        //
-        // //duty_cycle = current_pid_tick(800);
-        //
-        // set_duty_cycle(1, duty_cycle);
-        //
-        // current = get_current(1);
-        // current_amps = get_current_amps(1);
-        //
-        // //printf("%f\t%ld\t%d\t%f\t%ld\r\n", duty_cycle, encoder_pos, encoder_revolutions, current, time_now());
-        // printf("%ld\t%d\t%ld\t%f\r\n", duty_cycle, OC1R, current, current_amps);
-        // D13 = !D13;
+
+        //printf("%ld\r\n", integral);
+        printf("%d\r\n", OC1R);
     }
 }
