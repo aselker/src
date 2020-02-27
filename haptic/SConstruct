@@ -15,11 +15,11 @@ list = Builder(action = 'xc16-objdump -S -D $SOURCE > $TARGET',
                src_suffix = 'elf')
 env.Append(BUILDERS = {'List' : list})
 
-env.Program('motor_encoder_test', ['motor_encoder_test.c', 
+env.Program('haptic', ['haptic.c', 
                                    'descriptors.c', 
                                    '../lib/ajuart.c', 
                                    '../lib/usb.c', 
                                    '../lib/elecanisms.c']) 
-env.Hex('motor_encoder_test')
-env.List('motor_encoder_test')
+env.Hex('haptic')
+env.List('haptic')
 
