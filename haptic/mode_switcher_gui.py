@@ -27,12 +27,12 @@
 #
 
 import Tkinter as tk
-import usbservo
+import mode_switcher
 
 
-class usbservogui:
+class mode_switcher_gui:
     def __init__(self):
-        self.dev = usbservo.usbservo()
+        self.dev = mode_switcher.mode_switcher()
         if self.dev.dev >= 0:
             self.update_job = None
             self.root = tk.Tk()
@@ -46,10 +46,8 @@ class usbservogui:
             self.mode_status = tk.Label(self.root, text="Current Mode: ?\n")
             self.mode_status.pack(side=tk.TOP)
 
-            tk.Button(fm, text = 'CONNECT', command = self.dev.connect).pack(side = tk.LEFT)
-            fm.pack(side = tk.TOP)
-
-
+            tk.Button(fm, text="CONNECT", command=self.dev.connect).pack(side=tk.LEFT)
+            fm.pack(side=tk.TOP)
 
             param1_slider = tk.Scale(
                 self.root,
@@ -140,11 +138,15 @@ class usbservogui:
 
     def toggle_get_mode(self):
         self.dev.toggle_mode()
-        self.mode_status.configure(text = 'Current Mode: {!s}'.format(self.dev.read_mode()))
+        self.mode_status.configure(
+            text="Current Mode: {!s}".format(self.dev.read_mode())
+        )
         # self.update_job = self.root.after(50, self.update_status)
 
     def update_status(self):
-        self.mode_status.configure(text = 'Current Mode: {!s}'.format(self.dev.read_mode()))
+        self.mode_status.configure(
+            text="Current Mode: {!s}".format(self.dev.read_mode())
+        )
         # self.update_job = self.root.after(50, self.update_status)
 
     def shut_down(self):
@@ -154,5 +156,5 @@ class usbservogui:
 
 
 if __name__ == "__main__":
-    gui = usbservogui()
+    gui = mode_switcher_gui()
     gui.root.mainloop()

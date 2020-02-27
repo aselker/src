@@ -26,7 +26,7 @@
 
 import usb.core
 
-class usbservo:
+class mode_switcher:
 
     def __init__(self):
         self.TOGGLE_MODE = 0
