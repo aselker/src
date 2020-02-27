@@ -40,11 +40,11 @@ class usbservogui:
             self.root.protocol("WM_DELETE_WINDOW", self.shut_down)
             fm = tk.Frame(self.root)
 
-            tk.Button(fm, text = 'MODE', command = self.toggle_get_mode).pack(side = tk.LEFT)
-            fm.pack(side = tk.TOP)
+            tk.Button(fm, text="MODE", command=self.dev.toggle_mode).pack(side=tk.LEFT)
+            fm.pack(side=tk.TOP)
 
-            self.mode_status = tk.Label(self.root, text = 'Current Mode: ?\n')
-            self.mode_status.pack(side = tk.TOP)
+            self.mode_status = tk.Label(self.root, text="Current Mode: ?\n")
+            self.mode_status.pack(side=tk.TOP)
 
             tk.Button(fm, text = 'CONNECT', command = self.dev.connect).pack(side = tk.LEFT)
             fm.pack(side = tk.TOP)
@@ -65,7 +65,6 @@ class usbservogui:
             self.param1_status = tk.Label(self.root, text="Constant Force\n")
             self.param1_status.pack(side=tk.TOP)
 
-
             param2_slider = tk.Scale(
                 self.root,
                 from_=-100,
@@ -79,7 +78,6 @@ class usbservogui:
             param2_slider.pack(side=tk.TOP)
             self.param2_status = tk.Label(self.root, text="Spring Constant\n")
             self.param2_status.pack(side=tk.TOP)
-
 
             param3_slider = tk.Scale(
                 self.root,
@@ -95,7 +93,6 @@ class usbservogui:
             self.param3_status = tk.Label(self.root, text="Damping Coefficient\n")
             self.param3_status.pack(side=tk.TOP)
 
-
             param4_slider = tk.Scale(
                 self.root,
                 from_=-100,
@@ -110,17 +107,16 @@ class usbservogui:
             self.param4_status = tk.Label(self.root, text="Wall Distance\n")
             self.param4_status.pack(side=tk.TOP)
 
-
             param5_slider = tk.Scale(
                 self.root,
-                from_=-100,
+                from_=1,
                 to=100,
                 orient=tk.HORIZONTAL,
                 showvalue=tk.TRUE,
                 length=600,
                 command=self.set_param5_callback,
             )
-            param5_slider.set(0)
+            param5_slider.set(50)
             param5_slider.pack(side=tk.TOP)
             self.param5_status = tk.Label(self.root, text="Bump Interval\n")
             self.param5_status.pack(side=tk.TOP)

@@ -398,6 +398,8 @@ int32_t encoder_pos;
 int32_t last_encoder_pos = 0;
 int32_t speed;
 int32_t current_goal;
+int32_t sawtooth;
+int32_t wall_pos;
 
 // Interrupt Service Routine (ISR)
 void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
@@ -428,14 +430,16 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
             speed = encoder_pos - last_encoder_pos;
             last_encoder_pos = encoder_pos;
 
-            current_goal = ((encoder_pos - wall_slider*500) / 4) + (speed * abs(speed) / 2);
+            wall_pos = (int32_t)wall_slider*1024;
+
+            current_goal = ((encoder_pos - wall_pos) / 4) + (speed * abs(speed) / 2);
 
             if(wall_slider > 0){
-                if (encoder_pos > (wall_slider * 500)) {
+                if (encoder_pos > wall_pos) {
                     current_goal = 0;
                 }
             } else{
-                if (encoder_pos < (wall_slider * 500)) {
+                if (encoder_pos < wall_pos) {
                     current_goal = 0;
                 }
               }
@@ -444,7 +448,11 @@ void __attribute__((interrupt, auto_psv)) _T1Interrupt(void) {
             break;
 
         case MODE_BUMPS:
-            current_goal = abs((encoder_pos % bumps_slider * 100) - (bumps_slider * 50)) * spring_slider / 200;
+            if (encoder_pos<0) encoder_pos = -encoder_pos;
+            sawtooth = (encoder_pos % ((int32_t)bumps_slider * 512)) - ((int32_t)bumps_slider * 256);
+            if (sawtooth < 0) sawtooth = -sawtooth;
+            sawtooth -= ((int32_t)bumps_slider * 128);
+            current_goal = sawtooth * spring_slider / 128;
 
             break;
         default:
@@ -529,6 +537,7 @@ int16_t main(void) {
 #endif
 
         //printf("%ld\r\n", integral);
-        printf("%d\r\n", mode);
+        //printf("%d\r\n", mode);
+        printf("%ld\r\n", encoder_pos);
     }
 }
