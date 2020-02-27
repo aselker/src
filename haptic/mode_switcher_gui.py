@@ -40,7 +40,7 @@ class mode_switcher_gui:
             self.root.protocol("WM_DELETE_WINDOW", self.shut_down)
             fm = tk.Frame(self.root)
 
-            tk.Button(fm, text="MODE", command=self.dev.toggle_mode).pack(side=tk.LEFT)
+            tk.Button(fm, text="MODE", command=self.toggle_get_mode).pack(side=tk.LEFT)
             fm.pack(side=tk.TOP)
 
             self.mode_status = tk.Label(self.root, text="Current Mode: ?\n")
@@ -142,11 +142,11 @@ class mode_switcher_gui:
             text="Current Mode: {!s}".format(self.dev.read_mode())
         )
         # self.update_job = self.root.after(50, self.update_status)
-
-    def update_status(self):
-        self.mode_status.configure(
-            text="Current Mode: {!s}".format(self.dev.read_mode())
-        )
+    #
+    # def update_status(self):
+    #     self.mode_status.configure(
+    #         text="Current Mode: {!s}".format(self.dev.read_mode())
+    #     )
         # self.update_job = self.root.after(50, self.update_status)
 
     def shut_down(self):

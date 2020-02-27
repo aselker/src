@@ -538,6 +538,6 @@ int16_t main(void) {
 
         //printf("%ld\r\n", integral);
         //printf("%d\r\n", mode);
-        printf("%ld\r\n", encoder_pos);
+        //printf("%ld\r\n", encoder_pos);
     }
 }
