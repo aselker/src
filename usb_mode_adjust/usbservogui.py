@@ -40,11 +40,16 @@ class usbservogui:
             self.root.protocol("WM_DELETE_WINDOW", self.shut_down)
             fm = tk.Frame(self.root)
 
-            tk.Button(fm, text = 'MODE', command = self.dev.toggle_mode).pack(side = tk.LEFT)
+            tk.Button(fm, text = 'MODE', command = self.toggle_get_mode).pack(side = tk.LEFT)
             fm.pack(side = tk.TOP)
 
             self.mode_status = tk.Label(self.root, text = 'Current Mode: ?\n')
             self.mode_status.pack(side = tk.TOP)
+
+            tk.Button(fm, text = 'CONNECT', command = self.dev.connect).pack(side = tk.LEFT)
+            fm.pack(side = tk.TOP)
+
+
 
             param1_slider = tk.Scale(
                 self.root,
@@ -120,7 +125,7 @@ class usbservogui:
             self.param5_status = tk.Label(self.root, text="Bump Interval\n")
             self.param5_status.pack(side=tk.TOP)
 
-            self.update_status()
+        # self.update_status()
 
     def set_param1_callback(self, value):
         self.dev.set_param1(int(value))
@@ -137,12 +142,17 @@ class usbservogui:
     def set_param5_callback(self, value):
         self.dev.set_param5(int(value))
 
+    def toggle_get_mode(self):
+        self.dev.toggle_mode()
+        self.mode_status.configure(text = 'Current Mode: {!s}'.format(self.dev.read_mode()))
+        # self.update_job = self.root.after(50, self.update_status)
+
     def update_status(self):
         self.mode_status.configure(text = 'Current Mode: {!s}'.format(self.dev.read_mode()))
-        self.update_job = self.root.after(50, self.update_status)
+        # self.update_job = self.root.after(50, self.update_status)
 
     def shut_down(self):
-        self.root.after_cancel(self.update_job)
+        # self.root.after_cancel(self.update_job)
         self.root.destroy()
         self.dev.close()
 

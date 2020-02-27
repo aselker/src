@@ -43,6 +43,13 @@ class usbservo:
             raise ValueError('no USB device found matching idVendor = 0x6666 and idProduct = 0x0003')
         self.dev.set_configuration()
 
+    def connect(self):
+        self.dev = usb.core.find(idVendor = 0x6666, idProduct = 0x0003)
+        if self.dev is None:
+            raise ValueError('no USB device found matching idVendor = 0x6666 and idProduct = 0x0003')
+        self.dev.set_configuration()
+
+
     def close(self):
         self.dev = None
 
