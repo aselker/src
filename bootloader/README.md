@@ -16,10 +16,11 @@ To run the bootloader host software, which is located in the `software` subfolde
 1. Install pyusb via pip: `pip3 install pyusb` or `python3 -m pip install pyusb`
 
 1. At this point, you should be able to run the bootloader host software using sudo.  Because our bootloader device is a custom, vendor-specific USB device, Linux does not permit unprivileged access to it.  To allow general access, create a file in `/etc/udev/rules.d/` using your favorite text editor called `usb_prototype_devices.rules`.  Note that you will probably need to do this using sudo.  Type or paste the following text into the file:  
-`# Prototype vendor specific devices`
-`SUBSYSTEM=="usb", ATTRS{idVendor}=="6666",
-ATTRS{idProduct}=="4321", MODE=="0666"`  
-`SUBSYSTEM=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="0003", MODE=="0666"`
+```
+# Prototype vendor specific devices    
+SUBSYSTEM=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="4321", MODE="0666"    
+SUBSYSTEM=="usb", ATTRS{idVendor}=="6666", ATTRS{idProduct}=="0003", MODE="0666"    
+```
 
 1. Log out and log back in to put the new rules into effect.
 

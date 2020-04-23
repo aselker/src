@@ -95,6 +95,53 @@
 #define D12_RP              23
 #define D13_RP              22
 
+#define D4_AN               15
+
+#define D0_OD               ODCDbits.ODD5
+#define D1_OD               ODCDbits.ODD4
+#define D2_OD               ODCFbits.ODF4
+#define D3_OD               ODCFbits.ODF5
+#define D4_OD               ODCBbits.ODB15
+#define D5_OD               ODCFbits.ODF3
+#define D6_OD               ODCDbits.ODD8
+#define D7_OD               ODCDbits.ODD11
+#define D8_OD               ODCDbits.ODD9
+#define D9_OD               ODCDbits.ODD10
+#define D10_OD              ODCDbits.ODD0
+#define D11_OD              ODCDbits.ODD1
+#define D12_OD              ODCDbits.ODD2
+#define D13_OD              ODCDbits.ODD3
+
+#define D0_PU               CNPU1bits.CN14PUE
+#define D1_PU               CNPU1bits.CN13PUE
+#define D2_PU               CNPU2bits.CN17PUE
+#define D3_PU               CNPU2bits.CN18PUE
+#define D4_PU               CNPU1bits.CN12PUE
+#define D5_PU               CNPU5bits.CN71PUE
+#define D6_PU               CNPU4bits.CN53PUE
+#define D7_PU               CNPU4bits.CN56PUE
+#define D8_PU               CNPU4bits.CN54PUE
+#define D9_PU               CNPU4bits.CN55PUE
+#define D10_PU              CNPU4bits.CN49PUE
+#define D11_PU              CNPU4bits.CN50PUE
+#define D12_PU              CNPU4bits.CN51PUE
+#define D13_PU              CNPU4bits.CN52PUE
+
+#define D0_PD               CNPD1bits.CN14PDE
+#define D1_PD               CNPD1bits.CN13PDE
+#define D2_PD               CNPD2bits.CN17PDE
+#define D3_PD               CNPD2bits.CN18PDE
+#define D4_PD               CNPD1bits.CN12PDE
+#define D5_PD               CNPD5bits.CN71PDE
+#define D6_PD               CNPD4bits.CN53PDE
+#define D7_PD               CNPD4bits.CN56PDE
+#define D8_PD               CNPD4bits.CN54PDE
+#define D9_PD               CNPD4bits.CN55PDE
+#define D10_PD              CNPD4bits.CN49PDE
+#define D11_PD              CNPD4bits.CN50PDE
+#define D12_PD              CNPD4bits.CN51PDE
+#define D13_PD              CNPD4bits.CN52PDE
+
 // Analog header pin definitions
 #define A0                  PORTBbits.RB5
 #define A1                  PORTBbits.RB4
@@ -122,6 +169,27 @@
 #define A3_AN               2
 #define A4_AN               1
 #define A5_AN               0
+
+#define A0_OD               ODCBbits.ODB5
+#define A1_OD               ODCBbits.ODB4
+#define A2_OD               ODCBbits.ODB3
+#define A3_OD               ODCBbits.ODB2
+#define A4_OD               ODCBbits.ODB1
+#define A5_OD               ODCBbits.ODB0
+
+#define A0_PU               CNPU1bits.CN7PUE
+#define A1_PU               CNPU1bits.CN6PUE
+#define A2_PU               CNPU1bits.CN5PUE
+#define A3_PU               CNPU1bits.CN4PUE
+#define A4_PU               CNPU1bits.CN3PUE
+#define A5_PU               CNPU1bits.CN2PUE
+
+#define A0_PD               CNPD1bits.CN7PDE
+#define A1_PD               CNPD1bits.CN6PDE
+#define A2_PD               CNPD1bits.CN5PDE
+#define A3_PD               CNPD1bits.CN4PDE
+#define A4_PD               CNPD1bits.CN3PDE
+#define A5_PD               CNPD1bits.CN2PDE
 
 
 #define INT1_RP             1

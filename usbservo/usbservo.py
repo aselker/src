@@ -51,25 +51,25 @@ class usbservo:
         try:
             self.dev.ctrl_transfer(0x40, self.TOGGLE_LED1)
         except usb.core.USBError:
-            print "Could not send TOGGLE_LED1 vendor request."
+            print("Could not send TOGGLE_LED1 vendor request.")
 
     def toggle_led2(self):
         try:
             self.dev.ctrl_transfer(0x40, self.TOGGLE_LED2)
         except usb.core.USBError:
-            print "Could not send TOGGLE_LED2 vendor request."
+            print("Could not send TOGGLE_LED2 vendor request.")
 
     def toggle_led3(self):
         try:
             self.dev.ctrl_transfer(0x40, self.TOGGLE_LED3)
         except usb.core.USBError:
-            print "Could not send TOGGLE_LED3 vendor request."
+            print("Could not send TOGGLE_LED3 vendor request.")
 
     def read_sw1(self):
         try:
             ret = self.dev.ctrl_transfer(0xC0, self.READ_SW1, 0, 0, 1)
         except usb.core.USBError:
-            print "Could not send READ_SW1 vendor request."
+            print("Could not send READ_SW1 vendor request.")
         else:
             return int(ret[0])
 
@@ -77,7 +77,7 @@ class usbservo:
         try:
             ret = self.dev.ctrl_transfer(0xC0, self.READ_SW2, 0, 0, 1)
         except usb.core.USBError:
-            print "Could not send READ_SW2 vendor request."
+            print("Could not send READ_SW2 vendor request.")
         else:
             return int(ret[0])
 
@@ -85,7 +85,7 @@ class usbservo:
         try:
             ret = self.dev.ctrl_transfer(0xC0, self.READ_SW3, 0, 0, 1)
         except usb.core.USBError:
-            print "Could not send READ_SW3 vendor request."
+            print("Could not send READ_SW3 vendor request.")
         else:
             return int(ret[0])
 
@@ -93,7 +93,7 @@ class usbservo:
         try:
             ret = self.dev.ctrl_transfer(0xC0, self.READ_A0, 0, 0, 2)
         except usb.core.USBError:
-            print "Could not send READ_A0 vendor request."
+            print("Could not send READ_A0 vendor request.")
         else:
             return int(ret[0]) + 256 * int(ret[1])
 
@@ -101,11 +101,11 @@ class usbservo:
         try:
             self.dev.ctrl_transfer(0x40, self.SET_SERVO1, val)
         except usb.core.USBError:
-            print "Could not send SET_SERVO1 vendor request."
+            print("Could not send SET_SERVO1 vendor request.")
 
     def set_servo2(self, val):
         try:
             self.dev.ctrl_transfer(0x40, self.SET_SERVO2, val)
         except usb.core.USBError:
-            print "Could not send SET_SERVO2 vendor request."
+            print("Could not send SET_SERVO2 vendor request.")
 

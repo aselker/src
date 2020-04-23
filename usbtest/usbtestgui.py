@@ -24,14 +24,14 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 #
 
-import Tkinter as tk
+import tkinter as tk
 import usbtest
 
 class usbtestgui:
 
     def __init__(self):
         self.dev = usbtest.usbtest()
-        if self.dev.dev >= 0:
+        if self.dev.dev is not None:
             self.update_job = None
             self.root = tk.Tk()
             self.root.title('USB Test GUI')

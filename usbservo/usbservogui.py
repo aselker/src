@@ -24,14 +24,14 @@
 ## POSSIBILITY OF SUCH DAMAGE.
 #
 
-import Tkinter as tk
+import tkinter as tk
 import usbservo
 
 class usbservogui:
 
     def __init__(self):
         self.dev = usbservo.usbservo()
-        if self.dev.dev >= 0:
+        if self.dev.dev is not None:
             self.update_job = None
             self.root = tk.Tk()
             self.root.title('USB Servo GUI')

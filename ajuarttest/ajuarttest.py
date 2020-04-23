@@ -52,25 +52,25 @@ class ajuarttest:
         try:
             self.dev.ctrl_transfer(0x40, self.TOGGLE_LED1)
         except usb.core.USBError:
-            print "Could not send TOGGLE_LED1 vendor request."
+            print("Could not send TOGGLE_LED1 vendor request.")
 
     def toggle_led2(self):
         try:
             self.dev.ctrl_transfer(0x40, self.TOGGLE_LED2)
         except usb.core.USBError:
-            print "Could not send TOGGLE_LED2 vendor request."
+            print("Could not send TOGGLE_LED2 vendor request.")
 
     def toggle_led3(self):
         try:
             self.dev.ctrl_transfer(0x40, self.TOGGLE_LED3)
         except usb.core.USBError:
-            print "Could not send TOGGLE_LED3 vendor request."
+            print("Could not send TOGGLE_LED3 vendor request.")
 
     def read_sw1(self):
         try:
             ret = self.dev.ctrl_transfer(0xC0, self.READ_SW1, 0, 0, 1)
         except usb.core.USBError:
-            print "Could not send READ_SW1 vendor request."
+            print("Could not send READ_SW1 vendor request.")
         else:
             return int(ret[0])
 
@@ -78,7 +78,7 @@ class ajuarttest:
         try:
             ret = self.dev.ctrl_transfer(0xC0, self.READ_SW2, 0, 0, 1)
         except usb.core.USBError:
-            print "Could not send READ_SW2 vendor request."
+            print("Could not send READ_SW2 vendor request.")
         else:
             return int(ret[0])
 
@@ -86,7 +86,7 @@ class ajuarttest:
         try:
             ret = self.dev.ctrl_transfer(0xC0, self.READ_SW3, 0, 0, 1)
         except usb.core.USBError:
-            print "Could not send READ_SW3 vendor request."
+            print("Could not send READ_SW3 vendor request.")
         else:
             return int(ret[0])
 
@@ -94,7 +94,7 @@ class ajuarttest:
         try:
             ret = self.dev.ctrl_transfer(0xC0, self.UART_IN_WAITING, 0, 0, 2)
         except usb.core.USBError:
-            print "Could not send UART_IN_WAITING vendor request."
+            print("Could not send UART_IN_WAITING vendor request.")
         else:
             return int(ret[0]) + 256 * int(ret[1])
 
@@ -103,13 +103,13 @@ class ajuarttest:
         try:
             self.dev.ctrl_transfer(0x40, self.UART_PUTS, 0, 0, b)
         except usb.core.USBError:
-            print "Could not send UART_PUTS vendor request."
+            print("Could not send UART_PUTS vendor request.")
 
     def gets(self, n):
         try:
             ret = self.dev.ctrl_transfer(0xC0, self.UART_GETS, 0, 0, n)
         except usb.core.USBError:
-            print "Could not send UART_GETS vendor request."
+            print("Could not send UART_GETS vendor request.")
         else:
             return ''.join([chr(b) for b in ret])
 
@@ -117,5 +117,5 @@ class ajuarttest:
         try:
             self.dev.ctrl_transfer(0x40, self.HELLO_WORLD)
         except usb.core.USBError:
-            print "Could not send HELLO_WORLD vendor request."
+            print("Could not send HELLO_WORLD vendor request.")
 
