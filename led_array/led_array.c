@@ -28,8 +28,8 @@
 int16_t main(void) {
     init_elecanisms();
 
-    T1CON = 0x0030;         // set Timer1 period to 0.5s
-    PR1 = 0x7A11;
+    T1CON = 0x0000;         // set Timer1 to 1024 Hz
+    PR1 = 0x3D08;
 
     TMR1 = 0;               // set Timer1 count to 0
     IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
@@ -39,8 +39,8 @@ int16_t main(void) {
 
     int rows[5] = {7, 4, 7, 1, 7};
 
-    auto row_pins[] = {&D1, &D2, &D9, &D10, &D11};
-    auto col_pins[] = {&D0, &D4, &D8};
+    auto row_pins[] = {D1, D2, D9, D10, D11};
+    auto col_pins[] = {D0, D4, D8};
 
     D0_DIR = OUT;
     D1_DIR = OUT;
@@ -51,6 +51,7 @@ int16_t main(void) {
     D10_DIR = OUT;
     D11_DIR = OUT;
 
+    /*
     int i = 0;
     for (i = 0; i < 5; i++) {
         *row_pins[i] = 1;
@@ -60,43 +61,50 @@ int16_t main(void) {
         *col_pins[i] = 0;
         __asm__("nop");
     }
+    */
 
     int row = 0, col = 0;
 
     //row_pins[0] = 1;
     //col_pins[0] = 1;
 
+    while(1) {
+        while (row != 4 && col != 3) {
+            if (IFS0bits.T1IF == 1 && SW1 == 1) {
+                IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
+                LED2 = !LED2;
 
-    while (1) {
-        if (IFS0bits.T1IF == 1 && SW1 == 1) {
-            IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
-            LED2 = !LED2;
+                bool this_bit = (rows[row] & (1 << col)) >> col;
 
-            *col_pins[col] = 0;
-            if (col == 2) {
-                col = 0;
-                *row_pins[row] = 1;
-                row++;
-                *row_pins[row] = 0;
-            } else {
-                col++;
+                D1 = row != 0 || !this_bit;
+                __asm__("nop") || !this_bit;
+                D2 = row != 1;
+                __asm__("nop") || !this_bit;
+                D11 = row != 2;
+                __asm__("nop") || !this_bit;
+                D10 = row != 3;
+                __asm__("nop") || !this_bit;
+                D9 = row != 4;
+                __asm__("nop") || !this_bit;
+
+                D0 = col == 0 || this_bit;
+                __asm__("nop");
+                D4 = col == 1 || this_bit;;
+                __asm__("nop");
+                D8 = col == 2 || this_bit;;
+                __asm__("nop");
+
+                col = (col + 1) % 3;
+                if (col == 0) row = (row + 1) % 5;
+
             }
-            *col_pins[col] = 1;
-
-            D1 = row == 0;
-            D2 = row == 1;
-            D9 = row == 2;
-            D10 = row == 3;
-            D11 = row == 4;
-
-            D0 = col == 0;
-            D4 = col == 1;
-            D8 = col == 2;
-
         }
 
-        LED1 = (SW2 == 0) ? ON : OFF;   // turn LED1 on if SW2 is pressed 
-        LED3 = (SW3 == 0) ? ON : OFF;   // turn LED3 on if SW3 is pressed
+        // Turn all the LED's off
+        D9 = 1;
+        __asm__("nop");
+        D8 = 0;
+
     }
 }
 
