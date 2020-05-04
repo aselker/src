@@ -37,7 +37,12 @@ int16_t main(void) {
 
     LED2 = ON;
 
-    int rows[5] = {7, 4, 7, 1, 7};
+    uint8_t digits[][5] = {
+        {7, 5, 5, 5, 7},
+        {2, 3, 2, 2, 7},
+        {7, 4, 7, 1, 0},
+    };
+
 
     auto row_pins[] = {D1, D2, D9, D10, D11};
     auto col_pins[] = {D0, D4, D8};
@@ -68,35 +73,37 @@ int16_t main(void) {
     //row_pins[0] = 1;
     //col_pins[0] = 1;
 
+    int digit = 0;
     while(1) {
-        while (row != 4 && col != 3) {
-            if (IFS0bits.T1IF == 1 && SW1 == 1) {
-                IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
-                LED2 = !LED2;
+        for (row = 0; row < 5; row++) {
+            for (col = 0; col < 3; col++) {
 
-                bool this_bit = (rows[row] & (1 << col)) >> col;
+                uint8_t this_bit = digits[digit][row] & (1<<col);
 
-                D1 = row != 0 || !this_bit;
-                __asm__("nop") || !this_bit;
+                D1 = row != 0;
+                __asm__("nop");
                 D2 = row != 1;
-                __asm__("nop") || !this_bit;
+                __asm__("nop");
                 D11 = row != 2;
-                __asm__("nop") || !this_bit;
+                __asm__("nop");
                 D10 = row != 3;
-                __asm__("nop") || !this_bit;
+                __asm__("nop");
                 D9 = row != 4;
-                __asm__("nop") || !this_bit;
+                __asm__("nop");
 
-                D0 = col == 0 || this_bit;
+                D0 = (col == 0 && this_bit);
                 __asm__("nop");
-                D4 = col == 1 || this_bit;;
+                D4 = (col == 1 && this_bit);
                 __asm__("nop");
-                D8 = col == 2 || this_bit;;
+                D8 = (col == 2 && this_bit);
                 __asm__("nop");
 
                 col = (col + 1) % 3;
                 if (col == 0) row = (row + 1) % 5;
 
+                // Wait for the timer
+                while (IFS0bits.T1IF ==0) {}
+                IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
             }
         }
 
@@ -105,6 +112,13 @@ int16_t main(void) {
         __asm__("nop");
         D8 = 0;
 
+        // Do work, like checking buttons and incrementing time
+        int i;
+        for (i = 0; i < 10000; i++) {
+            __asm__("nop");
+        }
+
+        //digit = (digit+1) % 3;
     }
 }
 
