@@ -25,6 +25,110 @@
 */
 #include "elecanisms.h"
 
+void start_32b_timer() {
+    // Configure the timer so we know what time it is when we take a reading.
+    //
+    // We use two 16-bit timers (Timer2 and Timer3) together as a 32-bit timer.
+    //
+    // I think the system clock runs at 16MHz, so with a 1/256 prescale, each
+    // tick will be 16 nanoseconds, and the 32-bit timer will overflow in about
+    // a minute.
+    //
+    // Outputs are TMR3 (high) and TMR2 (low). 65536 per second, I think.
+
+    // This bit is copied from a FRM...
+    T2CON = 0x00;          //Stops any 16/32-bit Timer2 operation
+    T3CON = 0x00;          //Stops any 16-bit Timer3 operation
+    TMR3 = 0x00;           //Clear contents of the timer3 register
+    TMR2 = 0x00;           //Clear contents of the timer2 register
+    PR3 = 0xFFFF;          //Load the Period register3 with the value 0xFFFF
+    PR2 = 0xFFFF;          //Load the Period register2 with the value 0xFFFF
+
+
+    // Now, configure the timers
+    T2CON = 0x8038;
+    //      0b1000 0000 0011 1000
+    //    Run ^ |        ||| | ^ Use internal timer (Fosc/2)
+    //          |        ||| ^ Use as half of a 32-bit timer
+    //          |        |^^ 1/256 prescale
+    //          |        ^ Gated time accumulation disabled
+    //          ^ Continue timer in idle mode
+
+    T3CON = 0x8008;
+    //      0b1000 0000 0000 1000
+    //    Run ^ |        ||| | ^ Use internal timer (Fosc/2)
+    //          |        ||| ^ Use as half of a 32-bit timer
+    //          |        |^^ 1/1 prescale -- I think this is correct!
+    //          |        ^ Gated time accumulation disabled
+    //          ^ Continue timer in idle mode
+
+}
+
+uint32_t time_now() {
+    return TMR2 + ((uint32_t)TMR3 << 16);
+}
+
+void display(uint8_t rows[5]) {
+    int row = 0, col = 0;
+
+    // Wait for the timer
+    while (IFS0bits.T1IF ==0) {}
+    IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
+    while (IFS0bits.T1IF ==0) {}
+    IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
+    for (row = 0; row < 5; row++) {
+        switch(row) {
+            case 0:
+                D9 = 1;
+                __asm__("nop");
+                D1 = 0;
+                break;
+            case 1:
+                D1 = 1;
+                __asm__("nop");
+                D2 = 0;
+                break;
+            case 2:
+                D2 = 1;
+                __asm__("nop");
+                D11 = 0;
+                break;
+            case 3:
+                D11 = 1;
+                __asm__("nop");
+                D10 = 0;
+                break;
+            case 4:
+                D10 = 1;
+                __asm__("nop");
+                D9 = 0;
+                break;
+        }
+
+        D0 = (rows[row] & (1<<0)) >> 0;
+        __asm__("nop");
+        D4 = (rows[row] & (1<<1)) >> 1;
+        __asm__("nop");
+        D8 = (rows[row] & (1<<2)) >> 2;
+        __asm__("nop");
+
+        // Wait for the timer
+        while (IFS0bits.T1IF ==0) {}
+        IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
+
+        D0 = 0;
+        __asm__("nop");
+        D4 = 0;
+        __asm__("nop");
+        D8 = 0;
+    }
+
+    // Turn all the LED's off
+    D9 = 1;
+}
+
+
+
 int16_t main(void) {
     init_elecanisms();
 
@@ -40,7 +144,14 @@ int16_t main(void) {
     uint8_t digits[][5] = {
         {7, 5, 5, 5, 7},
         {2, 3, 2, 2, 7},
-        {7, 4, 7, 1, 0},
+        {7, 4, 7, 1, 7},
+        {7, 4, 7, 4, 7},
+        {5, 5, 7, 4, 4},
+        {7, 1, 7, 4, 7},
+        {7, 1, 7, 5, 7},
+        {7, 4, 4, 2, 2},
+        {7, 5, 7, 5, 7},
+        {7, 5, 7, 4, 7},
     };
 
 
@@ -56,61 +167,11 @@ int16_t main(void) {
     D10_DIR = OUT;
     D11_DIR = OUT;
 
-    /*
-    int i = 0;
-    for (i = 0; i < 5; i++) {
-        *row_pins[i] = 1;
-        __asm__("nop");
-    }
-    for (i = 0; i < 3; i++) {
-        *col_pins[i] = 0;
-        __asm__("nop");
-    }
-    */
-
-    int row = 0, col = 0;
-
-    //row_pins[0] = 1;
-    //col_pins[0] = 1;
+    start_32b_timer();
 
     int digit = 0;
+
     while(1) {
-        for (row = 0; row < 5; row++) {
-            for (col = 0; col < 3; col++) {
-
-                uint8_t this_bit = digits[digit][row] & (1<<col);
-
-                D1 = row != 0;
-                __asm__("nop");
-                D2 = row != 1;
-                __asm__("nop");
-                D11 = row != 2;
-                __asm__("nop");
-                D10 = row != 3;
-                __asm__("nop");
-                D9 = row != 4;
-                __asm__("nop");
-
-                D0 = (col == 0 && this_bit);
-                __asm__("nop");
-                D4 = (col == 1 && this_bit);
-                __asm__("nop");
-                D8 = (col == 2 && this_bit);
-                __asm__("nop");
-
-                col = (col + 1) % 3;
-                if (col == 0) row = (row + 1) % 5;
-
-                // Wait for the timer
-                while (IFS0bits.T1IF ==0) {}
-                IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
-            }
-        }
-
-        // Turn all the LED's off
-        D9 = 1;
-        __asm__("nop");
-        D8 = 0;
 
         // Do work, like checking buttons and incrementing time
         int i;
@@ -118,7 +179,8 @@ int16_t main(void) {
             __asm__("nop");
         }
 
-        //digit = (digit+1) % 3;
+        digit = (time_now() / 65536) % 10;
+        display(digits[digit]);
     }
 }
 
