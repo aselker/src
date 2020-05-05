@@ -179,10 +179,11 @@ int16_t main(void) {
         }
 
         if (score == -1) {
-            digit = ((time_now() - start_time) / 65536) % 10;
+            digit = (time_now() - start_time) / 65536;
+            if (9 < digit) digit = 9;
             if (SW2 == 0) score = digit;
         } else {
-            if ((time_now() % 32768) >= 16384) digit = score;
+            if ((time_now() % 32768) >= 8192) digit = score;
             else digit = 10; // Display nothing
         }
 
