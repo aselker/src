@@ -69,6 +69,8 @@ uint32_t time_now() {
 }
 
 void display(uint8_t rows[5]) {
+    // TODO: Option to cycle several times so it's brighter
+
     int row = 0, col = 0;
 
     // Wait for the timer
@@ -140,6 +142,7 @@ int16_t main(void) {
     T1CONbits.TON = 1;      // turn on Timer1
 
     uint8_t digits[][5] = {
+        // 1-10
         {7, 5, 5, 5, 7},
         {2, 3, 2, 2, 7},
         {7, 4, 7, 1, 7},
@@ -150,6 +153,16 @@ int16_t main(void) {
         {7, 4, 4, 2, 2},
         {7, 5, 7, 5, 7},
         {7, 5, 7, 4, 7},
+        
+        // A-F
+        {7, 5, 7, 5, 5},
+        {3, 5, 3, 5, 3},
+        {7, 1, 1, 1, 7},
+        {3, 5, 5, 5, 3},
+        {7, 1, 7, 1, 7},
+        {7, 1, 7, 1, 1},
+
+        // Blank
         {0, 0, 0, 0, 0},
     };
 
@@ -180,11 +193,11 @@ int16_t main(void) {
 
         if (score == -1) {
             digit = (time_now() - start_time) / 65536;
-            if (9 < digit) digit = 9;
+            if (15 < digit) digit = 15;
             if (SW2 == 0) score = digit;
         } else {
             if ((time_now() % 32768) >= 8192) digit = score;
-            else digit = 10; // Display nothing
+            else digit = 16; // Display nothing
         }
 
         display(digits[digit]);
