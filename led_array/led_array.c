@@ -139,8 +139,6 @@ int16_t main(void) {
     IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
     T1CONbits.TON = 1;      // turn on Timer1
 
-    LED2 = ON;
-
     uint8_t digits[][5] = {
         {7, 5, 5, 5, 7},
         {2, 3, 2, 2, 7},
@@ -152,11 +150,8 @@ int16_t main(void) {
         {7, 4, 4, 2, 2},
         {7, 5, 7, 5, 7},
         {7, 5, 7, 4, 7},
+        {0, 0, 0, 0, 0},
     };
-
-
-    auto row_pins[] = {D1, D2, D9, D10, D11};
-    auto col_pins[] = {D0, D4, D8};
 
     D0_DIR = OUT;
     D1_DIR = OUT;
@@ -167,20 +162,32 @@ int16_t main(void) {
     D10_DIR = OUT;
     D11_DIR = OUT;
 
+
+
+
     start_32b_timer();
 
     int digit = 0;
+    int score = 0;
+    uint32_t start_time;
 
     while(1) {
 
-        // Do work, like checking buttons and incrementing time
-        int i;
-        for (i = 0; i < 10000; i++) {
-            __asm__("nop");
+        if (SW1 == 0) {
+            start_time = time_now();
+            score = -1;
         }
 
-        digit = (time_now() / 65536) % 10;
+        if (score == -1) {
+            digit = ((time_now() - start_time) / 65536) % 10;
+            if (SW2 == 0) score = digit;
+        } else {
+            if ((time_now() % 32768) >= 16384) digit = score;
+            else digit = 10; // Display nothing
+        }
+
         display(digits[digit]);
+
     }
 }
 
