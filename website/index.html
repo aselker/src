@@ -1,25 +1,53 @@
 <!DOCTYPE html><html>
+<!--
+	TODO:
+	* Photo for cedar + guides
+	* GIF of UI
+-->
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 	<style type="text/css">
 		body{margin:40px auto;max-width:650px;line-height:1.6;font-size:18px;color:#444;padding:0 10px}
 		h1,h2,h3{line-height:1.2}
 		img{width:75%}
+		.video {
+				width:  60vw;
+				height: 33.75vw;
+				padding: 20px 0
+				/*margin-left: 5vw;*/
+				/*margin-right: 5vw;*/
+		}
 	</style>
-	<title>A Bit One-Dimensional</title>
+	<title>Responsibilities</title>
 </head>
 
 <body>
-	<header><h1>A Bit One-Dimensional</h1><aside>A balancing game</aside></header>
-	<h2>Section name</h2>
-	<h3>Subheader</h3>
-	<p>Content</p>
+	<header><h1>Responsibilities</h1><aside>One more thing to balance</aside></header>
+	<iframe class="video" src="https://www.youtube.com/embed/2_OjypnnTxM?rel=0" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+	<h3>Features</h3>
 	<ul>
-		<li>Bullet point</li>
-		<li>More bullet point</li>
+		<li>Intuitive controls</li>
+		<li>Action-packed gameplay</li>
+		<li>Durable build quality, except for one piece</li>
+		<li>Scores you from 0 to F</li>
+		<li>DRM-free</li>
 	</ul>
-	<img src="colinfurze.jpg" alt="Colin Furze has a bad idea"/>
-
-	<hr>
+	<hr />
+	<h2>Hardware</h2>
+	<img src="colinfurze.jpg" alt="The wooden base, aluminum rods, carriage, and white plastic mounting hardware"/>
+	<p>The cedar-wood base is light, strong, and even smells nice.  Anodized aluminum rods and polymer bushings give a smooth, sliding action and minimal play.  Durable 3D-printed PETG holds it all together.</p>
+	<img src="chuck.jpg" alt="Chuck on top of the stick"/>
+	<p>A classic drill chuck raises the center of mass of the stick, and adds an old-timey flair.  No drills were harmed in the making of this game.</p>
+	<img src="keyswitch-eco.jpg" alt="The stick rests against one of the keyswitches"/>
+	<p>Many of the materials are repurposed or reclaimed, including the wood, the linear guides, the wiring, and they keyswitches.  No materials were bought for the project.</p>
+	<hr />
+	<h2>Electronics</h2>
+	<img src="colinfurze.jpg" alt="Animation showing the user interface"/>
+	<p>One button-press starts the countdown.  At 0, the timer starts, giving one point per half-second stays up.  When the stick falls, it triggers a switch to end the timer and display the score as a single hexadecimal digit.</p>
+	<img src="ratsnest.jpg" alt="The inside of the electronics enclosure"/>
+	<p>The game is driven by a Braduino™ microcontroller board.  A homebrew LED matrix shines through the printed case to show score.</p>
+	<hr />
+	<h2>Software</h2>
+	<hr />
 	<p>Page style inspired by <a href=https://motherfuckingwebsite.com/>this</a>, css shamelessly stolen from <a href=https://github.com/wersimmon/BetterMotherfuckingWebsite-css>here</a>.</p>
 </body>
 </html>
