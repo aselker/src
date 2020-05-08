@@ -72,16 +72,17 @@ void display(uint8_t rows[5]) {
     // TODO: Option to cycle several times so it's brighter
 
     int row = 0, col = 0;
+    int i = 0;
 
     // Wait for the timer
     while (IFS0bits.T1IF ==0) {}
     IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
     while (IFS0bits.T1IF ==0) {}
     IFS0bits.T1IF = 0;      // lower Timer1 interrupt flag
-    for (row = 0; row < 5; row++) {
+    for (i = 0; i < 5; i++) for (row = 0; row < 5; row++) {
         switch(row) {
             case 0:
-                D9 = 1;
+                D10 = 1;
                 __asm__("nop");
                 D1 = 0;
                 break;
@@ -93,17 +94,17 @@ void display(uint8_t rows[5]) {
             case 2:
                 D2 = 1;
                 __asm__("nop");
-                D11 = 0;
+                D8 = 0;
                 break;
             case 3:
-                D11 = 1;
-                __asm__("nop");
-                D10 = 0;
-                break;
-            case 4:
-                D10 = 1;
+                D8 = 1;
                 __asm__("nop");
                 D9 = 0;
+                break;
+            case 4:
+                D9 = 1;
+                __asm__("nop");
+                D10 = 0;
                 break;
         }
 
@@ -111,7 +112,7 @@ void display(uint8_t rows[5]) {
         __asm__("nop");
         D4 = (rows[row] & (1<<1)) >> 1;
         __asm__("nop");
-        D8 = (rows[row] & (1<<2)) >> 2;
+        D11 = (rows[row] & (1<<2)) >> 2;
         __asm__("nop");
 
         // Wait for the timer
@@ -122,11 +123,11 @@ void display(uint8_t rows[5]) {
         __asm__("nop");
         D4 = 0;
         __asm__("nop");
-        D8 = 0;
+        D11 = 0;
     }
 
     // Turn all the LED's off
-    D9 = 1;
+    D10 = 1;
 }
 
 
@@ -170,12 +171,19 @@ int16_t main(void) {
     D1_DIR = OUT;
     D2_DIR = OUT;
     D4_DIR = OUT;
-    D8_DIR = OUT;
-    D9_DIR = OUT;
-    D10_DIR = OUT;
     D11_DIR = OUT;
+    D10_DIR = OUT;
+    D9_DIR = OUT;
+    D8_DIR = OUT;
 
 
+
+    D6_DIR = IN;
+    D7_DIR = IN;
+    D3_DIR = OUT;
+    D3 = 1; __asm__("nop");
+    D12_DIR = OUT;
+    D12 = 0; __asm__("nop");
 
 
     start_32b_timer();
@@ -186,17 +194,22 @@ int16_t main(void) {
 
     while(1) {
 
-        if (SW1 == 0) {
+        if (D7 == 0) {
+            start_time = time_now();
+            while ((time_now() - start_time) < 65536) display(digits[3]);
+            while ((time_now() - start_time) < 65536*2) display(digits[2]);
+            while ((time_now() - start_time) < 65536*3) display(digits[1]);
+
             start_time = time_now();
             score = -1;
         }
 
         if (score == -1) {
-            digit = (time_now() - start_time) / 65536;
+            digit = (time_now() - start_time) / 32768;
             if (15 < digit) digit = 15;
-            if (SW2 == 0) score = digit;
+            if (D6 == 0) score = digit;
         } else {
-            if ((time_now() % 32768) >= 8192) digit = score;
+            if ((time_now() % 65536) >= 16384) digit = score;
             else digit = 16; // Display nothing
         }
 
